@@ -1,6 +1,6 @@
-# Relay Retail
+# Retail Logic
 
-Relay Retail is a production-oriented, multi-tenant and multi-branch retail operating system covering catalogue, stock, POS, sales, payments, transfers, reconciliation, reporting, and auditability.
+Retail Logic is a production-oriented, multi-tenant and multi-branch retail operating system covering catalogue, stock, POS, sales, payments, transfers, reconciliation, reporting, and auditability.
 
 ## Implementation status
 

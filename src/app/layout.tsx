@@ -5,8 +5,9 @@ import { ActionToast } from "@/components/feedback/action-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Relay Retail", template: "%s · Relay Retail" },
+  title: { default: "Retail Logic", template: "%s · Retail Logic" },
   description: "Secure multi-branch retail operations.",
+  icons: { icon: "/brand/retail-logic-app-icon.png", apple: "/brand/retail-logic-app-icon.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
