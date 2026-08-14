@@ -21,7 +21,7 @@ export async function requireBusinessAccess(businessId?: string) {
   const user = await requireAuthenticatedUser();
   const conditions = [eq(businessMemberships.userId, user.id), eq(businessMemberships.active, true), eq(businesses.active, true)];
   if (businessId) conditions.push(eq(businessMemberships.businessId, businessId));
-  const [access] = await db.select({ business: businesses, role: businessMemberships.role }).from(businessMemberships).innerJoin(businesses, eq(businesses.id, businessMemberships.businessId)).where(and(...conditions)).limit(1);
+  const [access] = await db.select({ business: businesses, role: businessMemberships.role, permissions: businessMemberships.permissions }).from(businessMemberships).innerJoin(businesses, eq(businesses.id, businessMemberships.businessId)).where(and(...conditions)).limit(1);
   if (!access) throw new AuthorizationError("You do not have access to this business.");
   return { user, ...access };
 }
@@ -34,7 +34,7 @@ export async function requireRole(allowed: BusinessRole[], businessId?: string) 
 
 export async function requirePermission(permission: Permission, businessId?: string) {
   const access = await requireBusinessAccess(businessId);
-  if (!hasPermission(access.role, permission)) throw new AuthorizationError();
+  if (!hasPermission(access.role, permission, access.permissions)) throw new AuthorizationError();
   return access;
 }
 

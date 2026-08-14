@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasPermission, landingPageForRole } from "./permissions";
+import { effectivePermissions, hasPermission, landingPageForAccess, landingPageForRole } from "./permissions";
 
 describe("role permissions", () => {
   it("grants owners full business administration", () => {
@@ -19,5 +19,16 @@ describe("role permissions", () => {
     expect(hasPermission("STOREKEEPER", "inventory:manage")).toBe(true);
     expect(hasPermission("STOREKEEPER", "sales:read")).toBe(false);
     expect(landingPageForRole("STOREKEEPER")).toBe("/inventory");
+  });
+
+  it("uses an employee's explicit feature access instead of the role preset", () => {
+    expect(hasPermission("CASHIER", "pos:operate", ["sales:read"])).toBe(false);
+    expect(hasPermission("CASHIER", "sales:read", ["sales:read"])).toBe(true);
+    expect(effectivePermissions("CASHIER", ["sales:read"])).toEqual(["sales:read"]);
+    expect(landingPageForAccess("CASHIER", ["sales:read"])).toBe("/sales");
+  });
+
+  it("never restricts the business owner with stored overrides", () => {
+    expect(hasPermission("OWNER", "business:manage", [])).toBe(true);
   });
 });

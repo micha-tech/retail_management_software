@@ -15,7 +15,7 @@ export default async function PosReceipt({ params }: { params: Promise<{ id: str
   const [sale] = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.businessId, access.business.id))).limit(1);
   if (!sale) notFound();
   await requireBranchAccess(sale.branchId);
-  if (sale.cashierId !== access.user.id && !hasPermission(access.role, "sales:read")) notFound();
+  if (sale.cashierId !== access.user.id && !hasPermission(access.role, "sales:read", access.permissions)) notFound();
   const [items, paymentRows] = await Promise.all([
     db.select().from(saleItems).where(eq(saleItems.saleId, id)),
     db.select().from(payments).where(eq(payments.saleId, id)),

@@ -1,0 +1,2 @@
+ALTER TABLE "business_memberships" ADD COLUMN "permissions" text[];--> statement-breakpoint
+ALTER TABLE "business_memberships" ADD CONSTRAINT "memberships_permissions_valid_ck" CHECK ("business_memberships"."permissions" IS NULL OR "business_memberships"."permissions" <@ ARRAY['business:manage','dashboard:read','branch:read','branch:manage','team:manage','product:manage','inventory:read','inventory:manage','pos:operate','sales:read','report:read','audit:read']::text[]);

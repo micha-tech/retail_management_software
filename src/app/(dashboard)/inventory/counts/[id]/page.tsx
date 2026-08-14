@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db/client";
 import { branches, inventoryCountItems, inventoryCounts, users } from "@/db/schema";
 import { requireBranchAccess, requirePermission } from "@/modules/auth/authorization";
+import { hasPermission } from "@/modules/auth/permissions";
 import {
   cancelInventoryCountAction,
   importInventoryCountAction,
@@ -74,7 +75,7 @@ export default async function InventoryCountDetailPage({
     .orderBy(asc(inventoryCountItems.skuSnapshot))
     .limit(PAGE_SIZE)
     .offset((currentPage - 1) * PAGE_SIZE);
-  const mayPost = postingRoles.has(access.role);
+  const mayPost = postingRoles.has(access.role) && hasPermission(access.role, "inventory:manage", access.permissions);
   const statusClass = count.status === "POSTED" ? "pill active" : count.status === "REVIEW" ? "pill warning" : count.status === "CANCELLED" ? "pill danger" : "pill";
   const hiddenIdentity = <><input type="hidden" name="countId" value={count.id}/><input type="hidden" name="branchId" value={count.branchId}/></>;
   const feedback = query.error ? <p className="form-error">{query.error}</p> : query.saved ? <p className="form-success">Counted quantities saved.</p> : query.imported ? <p className="form-success">CSV quantities imported.</p> : query.posted ? <p className="form-success">Count posted and inventory balances updated.</p> : null;

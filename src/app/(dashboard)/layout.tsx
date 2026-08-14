@@ -4,7 +4,7 @@ import { requireBusinessAccess } from "@/modules/auth/authorization";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const { user, business, role } = await requireBusinessAccess();
+  const { user, business, role, permissions } = await requireBusinessAccess();
   if (user.mustChangePassword) redirect("/change-password");
-  return <AppShell user={user} business={business} role={role}><ConnectivityStatus/>{children}</AppShell>;
+  return <AppShell user={user} business={business} role={role} permissions={permissions}><ConnectivityStatus/>{children}</AppShell>;
 }

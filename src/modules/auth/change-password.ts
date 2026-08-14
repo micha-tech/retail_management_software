@@ -9,7 +9,7 @@ import { requireBusinessAccess } from "@/modules/auth/authorization";
 import { hashPassword, verifyPassword } from "@/modules/auth/password";
 import { passwordSchema } from "@/modules/auth/schemas";
 import { createSession } from "@/modules/auth/session";
-import { landingPageForRole } from "@/modules/auth/permissions";
+import { landingPageForAccess } from "@/modules/auth/permissions";
 
 export async function changePasswordAction(formData: FormData) {
   const access = await requireBusinessAccess();
@@ -26,5 +26,5 @@ export async function changePasswordAction(formData: FormData) {
     await tx.insert(auditLogs).values({ businessId: access.business.id, userId: access.user.id, action: "user.password_changed", entityType: "user", entityId: access.user.id, metadata: {} });
   });
   await createSession(access.user.id);
-  redirect(landingPageForRole(access.role));
+  redirect(landingPageForAccess(access.role, access.permissions));
 }

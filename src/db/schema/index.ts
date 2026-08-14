@@ -89,6 +89,7 @@ export const businessMemberships = pgTable(
     businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
     role: roleEnum("role").notNull(),
+    permissions: text("permissions").array(),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -97,6 +98,7 @@ export const businessMemberships = pgTable(
     primaryKey({ columns: [table.businessId, table.userId] }),
     index("memberships_user_active_idx").on(table.userId, table.active),
     index("memberships_business_role_idx").on(table.businessId, table.role),
+    check("memberships_permissions_valid_ck", sql`${table.permissions} IS NULL OR ${table.permissions} <@ ARRAY['business:manage','dashboard:read','branch:read','branch:manage','team:manage','product:manage','inventory:read','inventory:manage','pos:operate','sales:read','report:read','audit:read']::text[]`),
   ],
 );
 
