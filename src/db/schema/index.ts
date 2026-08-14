@@ -172,6 +172,50 @@ export const auditLogs = pgTable(
 
 export type BusinessRole = (typeof roleEnum.enumValues)[number];
 
+export const subscriptionStatusEnum = pgEnum("subscription_status", ["TRIALING", "ACTIVE", "PAST_DUE", "SUSPENDED", "CANCELED"]);
+export const billingIntervalEnum = pgEnum("billing_interval", ["MONTHLY", "ANNUAL", "MANUAL"]);
+
+export const businessSubscriptions = pgTable("business_subscriptions", {
+  businessId: uuid("business_id").primaryKey().references(() => businesses.id, { onDelete: "restrict" }),
+  planCode: text("plan_code").notNull().default("trial"),
+  status: subscriptionStatusEnum("status").notNull().default("TRIALING"),
+  billingInterval: billingIntervalEnum("billing_interval").notNull().default("MONTHLY"),
+  amount: bigint("amount", { mode: "bigint" }).notNull().default(sql`0`),
+  currency: text("currency").notNull().default("NGN"),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  currentPeriodStartsAt: timestamp("current_period_starts_at", { withTimezone: true }),
+  currentPeriodEndsAt: timestamp("current_period_ends_at", { withTimezone: true }),
+  gracePeriodEndsAt: timestamp("grace_period_ends_at", { withTimezone: true }),
+  branchLimit: integer("branch_limit"),
+  employeeLimit: integer("employee_limit"),
+  provider: text("provider"),
+  providerCustomerId: text("provider_customer_id"),
+  providerSubscriptionId: text("provider_subscription_id"),
+  notes: text("notes"),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "restrict" }),
+  ...timestamps,
+}, (table) => [
+  index("subscriptions_status_period_idx").on(table.status, table.currentPeriodEndsAt),
+  uniqueIndex("subscriptions_provider_subscription_uq").on(table.provider, table.providerSubscriptionId).where(sql`${table.providerSubscriptionId} IS NOT NULL`),
+  check("subscriptions_plan_code_ck", sql`${table.planCode} = lower(trim(${table.planCode})) AND ${table.planCode} ~ '^[a-z0-9][a-z0-9_-]{1,49}$'`),
+  check("subscriptions_amount_nonnegative_ck", sql`${table.amount} >= 0`),
+  check("subscriptions_currency_code_ck", sql`char_length(${table.currency}) = 3 AND ${table.currency} = upper(${table.currency})`),
+  check("subscriptions_limits_positive_ck", sql`(${table.branchLimit} IS NULL OR ${table.branchLimit} > 0) AND (${table.employeeLimit} IS NULL OR ${table.employeeLimit} > 0)`),
+]);
+
+export const subscriptionEvents = pgTable("subscription_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  action: text("action").notNull(),
+  previousState: jsonb("previous_state").notNull().default({}),
+  nextState: jsonb("next_state").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("subscription_events_business_created_idx").on(table.businessId, table.createdAt),
+  index("subscription_events_actor_created_idx").on(table.actorUserId, table.createdAt),
+]);
+
 export const stockMovementTypeEnum = pgEnum("stock_movement_type", ["OPENING_STOCK", "STOCK_RECEIVED", "SALE", "SALE_RETURN", "TRANSFER_OUT", "TRANSFER_IN", "DAMAGE", "ADJUSTMENT_IN", "ADJUSTMENT_OUT", "CORRECTION"]);
 export const posSessionStatusEnum = pgEnum("pos_session_status", ["OPEN", "CLOSED"]);
 export const saleStatusEnum = pgEnum("sale_status", ["COMPLETED", "VOIDED", "REFUNDED"]);

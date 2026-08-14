@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { auditLogs, branches, posSessions } from "@/db/schema";
@@ -18,11 +18,17 @@ export async function createBranchAction(formData: FormData) {
   const data = parsed.data;
   try {
     await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${access.business.id}))`);
+      if (access.subscription?.branchLimit) {
+        const [usage] = await tx.execute<{ count:number }>(sql`select count(*)::int count from branches where business_id=${access.business.id} and active=true`);
+        if ((usage?.count ?? 0) >= access.subscription.branchLimit) throw new Error("SUBSCRIPTION_BRANCH_LIMIT");
+      }
       const [branch] = await tx.insert(branches).values({ businessId: access.business.id, name: data.name, code: branchCode(data.code), address: data.address || null, phone: data.phone || null, email: data.email || null, timezone: data.timezone }).returning({ id: branches.id });
       const requestHeaders = await headers();
       await tx.insert(auditLogs).values({ businessId: access.business.id, branchId: branch.id, userId: access.user.id, action: "branch.created", entityType: "branch", entityId: branch.id, ipAddress: requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || null, metadata: { name: data.name, code: branchCode(data.code) } });
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "SUBSCRIPTION_BRANCH_LIMIT") redirect("/branches/new?error=Your+subscription+branch+limit+has+been+reached.");
     if ((error as { code?: string }).code === "23505") redirect("/branches/new?error=That+branch+code+is+already+in+use.");
     throw error;
   }
@@ -49,10 +55,16 @@ export async function updateBranchAction(formData: FormData) {
   }
   try {
     await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${access.business.id}))`);
+      if (active && !existing.active && access.subscription?.branchLimit) {
+        const [usage] = await tx.execute<{ count:number }>(sql`select count(*)::int count from branches where business_id=${access.business.id} and active=true`);
+        if ((usage?.count ?? 0) >= access.subscription.branchLimit) throw new Error("SUBSCRIPTION_BRANCH_LIMIT");
+      }
       await tx.update(branches).set({ name: data.name, code: branchCode(data.code), address: data.address || null, phone: data.phone || null, email: data.email || null, timezone: data.timezone, active, updatedAt: new Date() }).where(and(eq(branches.id, data.branchId), eq(branches.businessId, access.business.id)));
       await tx.insert(auditLogs).values({ businessId: access.business.id, branchId: data.branchId, userId: access.user.id, action: existing.active !== active ? (active ? "branch.activated" : "branch.deactivated") : "branch.updated", entityType: "branch", entityId: data.branchId, metadata: { oldCode: existing.code, newCode: branchCode(data.code), active } });
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "SUBSCRIPTION_BRANCH_LIMIT") redirect(`/branches/${data.branchId}/edit?error=Your+subscription+branch+limit+has+been+reached.`);
     if ((error as { code?: string }).code === "23505") redirect(`/branches/${data.branchId}/edit?error=That+branch+code+is+already+in+use.`);
     throw error;
   }

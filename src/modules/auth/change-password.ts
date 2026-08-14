@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword } from "@/modules/auth/password";
 import { passwordSchema } from "@/modules/auth/schemas";
 import { createSession } from "@/modules/auth/session";
 import { landingPageForAccess } from "@/modules/auth/permissions";
+import { isPlatformAdminEmail } from "@/modules/platform/authorization";
 
 export async function changePasswordAction(formData: FormData) {
   const access = await requireBusinessAccess();
@@ -26,5 +27,6 @@ export async function changePasswordAction(formData: FormData) {
     await tx.insert(auditLogs).values({ businessId: access.business.id, userId: access.user.id, action: "user.password_changed", entityType: "user", entityId: access.user.id, metadata: {} });
   });
   await createSession(access.user.id);
+  if (isPlatformAdminEmail(access.user.email)) redirect("/platform");
   redirect(landingPageForAccess(access.role, access.permissions));
 }

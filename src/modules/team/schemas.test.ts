@@ -27,4 +27,11 @@ describe("employee feature access", () => {
   it("rejects unknown feature identifiers", () => {
     expect(createStaffSchema.safeParse({ ...baseStaff, permissions: ["system:root"] }).success).toBe(false);
   });
+
+  it("explains every initial password requirement", () => {
+    const result = createStaffSchema.safeParse({ ...baseStaff, initialPassword: "weakpass", permissions: ["pos:operate"] });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.flatten().fieldErrors.initialPassword).toEqual(expect.arrayContaining(["Use at least 12 characters.", "Add an uppercase letter.", "Add a number."]));
+  });
 });

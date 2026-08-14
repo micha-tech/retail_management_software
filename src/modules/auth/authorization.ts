@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
-import { branchAssignments, branches, businessMemberships, businesses, users, type BusinessRole } from "@/db/schema";
+import { branchAssignments, branches, businessMemberships, businessSubscriptions, businesses, users, type BusinessRole } from "@/db/schema";
 import { AuthorizationError } from "@/lib/errors";
 import { getSessionRecord } from "@/modules/auth/session";
 import { hasPermission, type Permission } from "@/modules/auth/permissions";
@@ -21,8 +21,9 @@ export async function requireBusinessAccess(businessId?: string) {
   const user = await requireAuthenticatedUser();
   const conditions = [eq(businessMemberships.userId, user.id), eq(businessMemberships.active, true), eq(businesses.active, true)];
   if (businessId) conditions.push(eq(businessMemberships.businessId, businessId));
-  const [access] = await db.select({ business: businesses, role: businessMemberships.role, permissions: businessMemberships.permissions }).from(businessMemberships).innerJoin(businesses, eq(businesses.id, businessMemberships.businessId)).where(and(...conditions)).limit(1);
+  const [access] = await db.select({ business: businesses, role: businessMemberships.role, permissions: businessMemberships.permissions, subscription: businessSubscriptions }).from(businessMemberships).innerJoin(businesses, eq(businesses.id, businessMemberships.businessId)).leftJoin(businessSubscriptions, eq(businessSubscriptions.businessId, businesses.id)).where(and(...conditions)).limit(1);
   if (!access) throw new AuthorizationError("You do not have access to this business.");
+  if (access.subscription && ["SUSPENDED", "CANCELED"].includes(access.subscription.status)) redirect(`/subscription-status?business=${access.business.id}`);
   return { user, ...access };
 }
 

@@ -6,12 +6,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
-import { auditLogs, branches, branchAssignments, businessMemberships, businesses, loginAttempts, users } from "@/db/schema";
+import { auditLogs, branches, branchAssignments, businessMemberships, businessSubscriptions, businesses, loginAttempts, users } from "@/db/schema";
 import { normalizeEmail, branchCode } from "@/lib/utils";
 import { databaseConstraint, databaseErrorCode, isDatabaseUnavailable } from "@/lib/database-errors";
 import { hashPassword, verifyPassword } from "@/modules/auth/password";
 import { createSession, deleteSession } from "@/modules/auth/session";
 import { landingPageForAccess } from "@/modules/auth/permissions";
+import { isPlatformAdminEmail } from "@/modules/platform/authorization";
 import { loginSchema, onboardingSchema, type ActionState } from "@/modules/auth/schemas";
 
 function requestIp(requestHeaders: Headers) {
@@ -39,11 +40,13 @@ export async function loginAction(_state: ActionState, formData: FormData): Prom
 
   await db.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
   const [membership] = await db.select({ role: businessMemberships.role, businessId: businessMemberships.businessId, permissions: businessMemberships.permissions }).from(businessMemberships).where(and(eq(businessMemberships.userId, user.id), eq(businessMemberships.active, true))).limit(1);
-  if (!membership) return { error: "Your business access is inactive. Contact an administrator." };
-  await db.insert(auditLogs).values({ businessId: membership.businessId, userId: user.id, action: "auth.login_succeeded", entityType: "user", entityId: user.id, ipAddress, metadata: {} });
+  const platformAdmin = isPlatformAdminEmail(user.email);
+  if (!membership && !platformAdmin) return { error: "Your business access is inactive. Contact an administrator." };
+  if (membership) await db.insert(auditLogs).values({ businessId: membership.businessId, userId: user.id, action: "auth.login_succeeded", entityType: "user", entityId: user.id, ipAddress, metadata: {} });
   await createSession(user.id);
   if (user.mustChangePassword) redirect("/change-password");
-  redirect(landingPageForAccess(membership.role, membership.permissions));
+  if (platformAdmin) redirect("/platform");
+  redirect(landingPageForAccess(membership!.role, membership!.permissions));
 }
 
 export async function logoutAction() {
@@ -65,6 +68,8 @@ export async function onboardAction(_state: ActionState, formData: FormData): Pr
       const [business] = await tx.insert(businesses).values({ name: data.businessName, currency: data.currency, timezone: data.timezone, email }).returning({ id: businesses.id });
       const [branch] = await tx.insert(branches).values({ businessId: business.id, name: data.branchName, code: branchCode(data.branchCode), address: data.address || null, timezone: data.timezone }).returning({ id: branches.id });
       await tx.insert(businessMemberships).values({ businessId: business.id, userId: user.id, role: "OWNER" });
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      await tx.insert(businessSubscriptions).values({ businessId: business.id, planCode: "trial", status: "TRIALING", billingInterval: "MONTHLY", amount: 0n, currency: data.currency, trialEndsAt, currentPeriodStartsAt: new Date(), currentPeriodEndsAt: trialEndsAt, branchLimit: 3, employeeLimit: 10, updatedBy: user.id });
       await tx.insert(branchAssignments).values({ businessId: business.id, branchId: branch.id, userId: user.id });
       await tx.insert(auditLogs).values({ businessId: business.id, branchId: branch.id, userId: user.id, action: "business.onboarded", entityType: "business", entityId: business.id, ipAddress, metadata: { firstBranchId: branch.id } });
       return user.id;

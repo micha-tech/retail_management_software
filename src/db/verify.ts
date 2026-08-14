@@ -46,6 +46,16 @@ async function main() {
       where event_object_schema = 'public'
         and trigger_name in ('inventory_counts_terminal_immutable', 'inventory_count_items_terminal_immutable')
     `;
+    const [subscriptionControls] = await transaction<{ subscriptions: number; companies: number; immutable_events: boolean }[]>`
+      select
+        (select count(*)::int from business_subscriptions) subscriptions,
+        (select count(*)::int from businesses) companies,
+        exists (
+          select 1 from information_schema.triggers
+          where event_object_schema = 'public' and event_object_table = 'subscription_events'
+            and trigger_name = 'subscription_events_immutable'
+        ) immutable_events
+    `;
     const expectedTablesExist = ["businesses", "branches", "users"].every((name) => tables.some((table) => table.table_name === name));
     const counts = expectedTablesExist
       ? await transaction<{ businesses: number; branches: number; users: number }[]>`
@@ -70,6 +80,7 @@ async function main() {
       tenantIsolationForeignKeys: tenantConstraints[0]?.count ?? 0,
       immutableAuditTrigger: immutableAuditTrigger[0]?.exists ?? false,
       immutableInventoryCountTriggers: immutableCountTriggers[0]?.count ?? 0,
+      subscriptionControls: subscriptionControls ?? null,
       migrationJournalExists: migrationJournal.journal_exists,
       migrationRows,
       rowCounts: counts[0] ?? null,
