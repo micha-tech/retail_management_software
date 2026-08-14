@@ -1,0 +1,8 @@
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+import { requirePermission } from "@/modules/auth/authorization";
+import { listAccessibleBranches } from "@/modules/branches/queries";
+import { createInventoryCountAction } from "@/modules/inventory/count-actions";
+
+export default async function NewInventoryCountPage({searchParams}:{searchParams:Promise<{error?:string}>}){const access=await requirePermission("inventory:manage");const branches=await listAccessibleBranches({businessId:access.business.id,userId:access.user.id,role:access.role});const{error}=await searchParams;return <><header className="topbar"><div><Link className="back-link" href="/inventory/counts"><ArrowLeft size={15}/> Inventory counts</Link><h1>Create inventory count</h1><p>One open count is allowed per branch.</p></div></header><main className="page narrow"><section className="surface"><form action={createInventoryCountAction} className="form-stack"><label>Branch<select name="branchId" required>{branches.map((branch)=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></label><label>Count notes<textarea name="notes" rows={3} placeholder="Annual stocktake, aisle cycle count, or instructions"/></label>{error&&<p className="form-error">{error}</p>}<div className="phase-note">Creating a draft does not pause operations. Starting the count snapshots stock and pauses POS and other inventory mutations until the count is posted or cancelled.</div><div className="form-actions"><Link className="button secondary inline-button" href="/inventory/counts">Cancel</Link><button className="button primary">Create draft</button></div></form></section></main></>}

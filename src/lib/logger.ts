@@ -1,0 +1,3 @@
+type Context = Record<string, unknown>;
+function write(level:"info"|"warn"|"error",event:string,context:Context={}) { const record={timestamp:new Date().toISOString(),level,event,...context}; (level==="error"?console.error:level==="warn"?console.warn:console.info)(JSON.stringify(record)); }
+export const logger={info:(event:string,context?:Context)=>write("info",event,context),warn:(event:string,context?:Context)=>write("warn",event,context),error:(event:string,error:unknown,context:Context={})=>write("error",event,{...context,error:error instanceof Error?{name:error.name,message:error.message}:String(error)})};

@@ -1,0 +1,3 @@
+ALTER TABLE "branches" ADD CONSTRAINT "branches_code_normalized_ck" CHECK ("branches"."code" = upper("branches"."code") AND "branches"."code" ~ '^[A-Z0-9-]+$');--> statement-breakpoint
+ALTER TABLE "businesses" ADD CONSTRAINT "businesses_currency_code_ck" CHECK (char_length("businesses"."currency") = 3 AND "businesses"."currency" = upper("businesses"."currency"));--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_email_normalized_ck" CHECK ("users"."email" = lower(trim("users"."email")));

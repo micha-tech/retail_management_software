@@ -1,0 +1,9 @@
+import { asc, eq } from "drizzle-orm";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { db } from "@/db/client";
+import { products } from "@/db/schema";
+import { requirePermission } from "@/modules/auth/authorization";
+import { listAccessibleBranches } from "@/modules/branches/queries";
+import { adjustStockAction } from "@/modules/inventory/actions";
+export default async function AdjustPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) { const access = await requirePermission("inventory:manage"); const [branchRecords, productRecords] = await Promise.all([listAccessibleBranches({ businessId: access.business.id, userId: access.user.id, role: access.role }), db.select().from(products).where(eq(products.businessId, access.business.id)).orderBy(asc(products.name))]); const { error } = await searchParams; return <><header className="topbar"><div><Link className="back-link" href="/inventory"><ArrowLeft size={15}/> Inventory</Link><h1>Adjust inventory</h1><p>Every change records the old balance, new balance, actor, and reason.</p></div></header><main className="page narrow"><section className="surface"><form action={adjustStockAction} className="form-stack"><div className="form-grid"><label>Branch<select name="branchId">{branchRecords.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label><label>Product<select name="productId">{productRecords.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.sku}</option>)}</select></label><label>New quantity<input name="newQuantity" type="number" min="0" required /></label></div><label>Reason<textarea name="reason" rows={3} minLength={3} required /></label>{error && <p className="form-error">{error}</p>}<div className="form-actions"><Link className="button secondary inline-button" href="/inventory">Cancel</Link><button className="button primary">Record adjustment</button></div></form></section></main></>; }

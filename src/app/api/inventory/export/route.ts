@@ -1,0 +1,9 @@
+import { sql } from "drizzle-orm";
+import { NextRequest } from "next/server";
+
+import { db } from "@/db/client";
+import { csvDocument } from "@/lib/csv";
+import { requirePermission } from "@/modules/auth/authorization";
+import { listAccessibleBranches } from "@/modules/branches/queries";
+
+export async function GET(request:NextRequest){const access=await requirePermission("inventory:read");const accessible=await listAccessibleBranches({businessId:access.business.id,userId:access.user.id,role:access.role});const selected=accessible.find((branch)=>branch.id===request.nextUrl.searchParams.get("branch"));const branchIds=selected?[selected.id]:accessible.map((branch)=>branch.id);const records=branchIds.length?await db.execute<{branch_code:string;branch_name:string;sku:string;product_name:string;system_quantity:number;reorder_level:number}>(sql`select b.code branch_code,b.name branch_name,p.sku,p.name product_name,coalesce(bi.quantity_on_hand,0)::int system_quantity,greatest(coalesce(bi.reorder_level,0),p.minimum_stock_level)::int reorder_level from branches b cross join products p left join branch_inventory bi on bi.branch_id=b.id and bi.product_id=p.id where b.id in (${sql.join(branchIds.map((id)=>sql`${id}`),sql`, `)}) and p.business_id=${access.business.id} and p.active=true and p.track_inventory=true order by b.name,p.name`):[];const body=csvDocument(["branch_code","branch_name","sku","product_name","system_quantity","reorder_level","counted_quantity","notes"],records.map((row)=>[row.branch_code,row.branch_name,row.sku,row.product_name,row.system_quantity,row.reorder_level,"",""]));const suffix=selected?selected.code.toLowerCase():"all-branches";return new Response(body,{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":`attachment; filename="inventory-${suffix}.csv"`,"Cache-Control":"private, no-store"}});}

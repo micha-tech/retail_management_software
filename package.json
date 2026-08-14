@@ -1,0 +1,48 @@
+{
+  "name": "retail_management_software",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:verify": "tsx src/db/verify.ts",
+    "db:seed": "tsx src/db/seed/phase1.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "argon2": "^0.45.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.31.0",
+    "next": "16.3.1",
+    "postgres": "^3.4.9",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.10",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.12",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}
