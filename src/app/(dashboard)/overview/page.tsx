@@ -32,8 +32,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const today = todayRange(access.business.timezone).date;
   const period: Period = ["today", "yesterday", "week", "month", "custom"].includes(params.period || "") ? params.period! : "today";
   const dates = resolveDates(today, period, params.from, params.to);
-  const start = localDateToUtc(dates.from, access.business.timezone);
-  const end = localDateToUtc(dates.to, access.business.timezone, true);
+  const start = localDateToUtc(dates.from, access.business.timezone).toISOString();
+  const end = localDateToUtc(dates.to, access.business.timezone, true).toISOString();
 
   if (!branchIds.length) return <main className="page"><div className="empty-state">No assigned active branch.</div></main>;
   const ids = sql.join(branchIds.map((id) => sql`${id}`), sql`, `);

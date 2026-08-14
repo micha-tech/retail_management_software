@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
 import { auditLogs, sessions, users } from "@/db/schema";
+import { withToast } from "@/lib/toast";
 import { requireBusinessAccess } from "@/modules/auth/authorization";
 import { hashPassword, verifyPassword } from "@/modules/auth/password";
 import { passwordSchema } from "@/modules/auth/schemas";
@@ -27,6 +28,6 @@ export async function changePasswordAction(formData: FormData) {
     await tx.insert(auditLogs).values({ businessId: access.business.id, userId: access.user.id, action: "user.password_changed", entityType: "user", entityId: access.user.id, metadata: {} });
   });
   await createSession(access.user.id);
-  if (isPlatformAdminEmail(access.user.email)) redirect("/platform");
-  redirect(landingPageForAccess(access.role, access.permissions));
+  if (isPlatformAdminEmail(access.user.email)) redirect(withToast("/platform", "Password updated successfully."));
+  redirect(withToast(landingPageForAccess(access.role, access.permissions), "Password updated successfully."));
 }

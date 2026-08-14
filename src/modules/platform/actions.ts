@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { businesses, businessSubscriptions, subscriptionEvents } from "@/db/schema";
 import { parseMoney } from "@/lib/money";
+import { withToast } from "@/lib/toast";
 import { requirePlatformAdmin } from "@/modules/platform/authorization";
 import { subscriptionUpdateSchema } from "@/modules/platform/schemas";
 
@@ -52,5 +53,5 @@ export async function updateSubscriptionAction(formData: FormData) {
   });
   revalidatePath("/platform");
   revalidatePath(`/platform/companies/${data.businessId}`);
-  redirect(`/platform/companies/${data.businessId}?saved=1`);
+  redirect(withToast(`/platform/companies/${data.businessId}`, "Subscription updated and recorded."));
 }

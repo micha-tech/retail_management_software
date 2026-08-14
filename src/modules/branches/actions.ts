@@ -7,6 +7,7 @@ import { and, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { auditLogs, branches, posSessions } from "@/db/schema";
+import { withToast } from "@/lib/toast";
 import { branchCode } from "@/lib/utils";
 import { requirePermission } from "@/modules/auth/authorization";
 import { createBranchSchema, updateBranchSchema } from "@/modules/branches/schemas";
@@ -33,7 +34,7 @@ export async function createBranchAction(formData: FormData) {
     throw error;
   }
   revalidatePath("/branches");
-  redirect("/branches");
+  redirect(withToast("/branches", "Branch created successfully."));
 }
 
 export async function updateBranchAction(formData: FormData) {
@@ -69,5 +70,5 @@ export async function updateBranchAction(formData: FormData) {
     throw error;
   }
   revalidatePath("/branches");
-  redirect("/branches");
+  redirect(withToast("/branches", "Branch updated successfully."));
 }

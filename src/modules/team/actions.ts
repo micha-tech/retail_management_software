@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { auditLogs, branches, branchAssignments, businessMemberships, users } from "@/db/schema";
 import { databaseConstraint, databaseErrorCode, isDatabaseUnavailable } from "@/lib/database-errors";
+import { withToast } from "@/lib/toast";
 import { normalizeEmail } from "@/lib/utils";
 import { requirePermission } from "@/modules/auth/authorization";
 import { effectivePermissions, hasPermission, type Permission } from "@/modules/auth/permissions";
@@ -73,7 +74,7 @@ export async function createStaffAction(formData: FormData) {
     redirect("/team/new?error=We+could+not+create+this+employee.+No+account+was+created.+Please+try+again.");
   }
   revalidatePath("/team");
-  redirect("/team");
+  redirect(withToast("/team", "Employee created successfully."));
 }
 
 export async function updateStaffAction(formData: FormData) {
@@ -104,5 +105,5 @@ export async function updateStaffAction(formData: FormData) {
     await tx.insert(auditLogs).values({ businessId: access.business.id, userId: access.user.id, action: membership.role !== data.role ? "user.role_changed" : data.active ? "user.access_updated" : "user.deactivated", entityType: "user", entityId: data.memberId, metadata: { oldRole: membership.role, newRole: data.role, oldPermissions: existingPermissions, newPermissions: selectedPermissions, active: data.active, branchIds: assignedBranches.map((branch) => branch.id) } });
   });
   revalidatePath("/team");
-  redirect("/team");
+  redirect(withToast("/team", "Employee access updated successfully."));
 }

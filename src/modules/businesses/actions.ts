@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { db } from "@/db/client";
 import { auditLogs, businesses } from "@/db/schema";
+import { withToast } from "@/lib/toast";
 import { requirePermission } from "@/modules/auth/authorization";
 
 const settingsSchema = z.object({ name: z.string().trim().min(2).max(160), timezone: z.string().trim().min(1).max(100), phone: z.string().trim().max(40).optional(), email: z.union([z.literal(""),z.email().max(254)]).optional() });
@@ -21,5 +22,5 @@ export async function updateBusinessAction(formData: FormData) {
   });
   revalidatePath("/settings");
   revalidatePath("/overview");
-  redirect("/settings?saved=1");
+  redirect(withToast("/settings", "Business settings saved."));
 }

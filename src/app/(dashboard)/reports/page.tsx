@@ -16,8 +16,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const today = todayRange(access.business.timezone);
   const from = /^\d{4}-\d{2}-\d{2}$/.test(params.from || "") ? params.from! : today.date;
   const to = /^\d{4}-\d{2}-\d{2}$/.test(params.to || "") ? params.to! : today.date;
-  const start = localDateToUtc(from, access.business.timezone);
-  const end = localDateToUtc(to, access.business.timezone, true);
+  const start = localDateToUtc(from, access.business.timezone).toISOString();
+  const end = localDateToUtc(to, access.business.timezone, true).toISOString();
 
   if (!branchIds.length) return <main className="page"><div className="empty-state">No assigned active branch.</div></main>;
   const ids = sql.join(branchIds.map((id) => sql`${id}`), sql`, `);

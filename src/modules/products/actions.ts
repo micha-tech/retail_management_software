@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { and, eq } from "drizzle-orm";
 import { auditLogs, categories, products } from "@/db/schema";
 import { parseMoney } from "@/lib/money";
+import { withToast } from "@/lib/toast";
 import { requirePermission } from "@/modules/auth/authorization";
 import { categorySchema, productSchema, updateProductSchema } from "./schemas";
 
@@ -21,7 +22,7 @@ export async function createCategoryAction(formData: FormData) {
   if (!parsed.success) redirect("/products/new?error=Enter+a+valid+category+name.");
   try { await db.insert(categories).values({ businessId: access.business.id, name: parsed.data.name }); }
   catch (error) { if ((error as { code?: string }).code !== "23505") throw error; }
-  revalidatePath("/products/new"); redirect("/products/new");
+  revalidatePath("/products/new"); redirect(withToast("/products/new", "Category added successfully."));
 }
 
 export async function createProductAction(formData: FormData) {
@@ -35,7 +36,7 @@ export async function createProductAction(formData: FormData) {
       await tx.insert(auditLogs).values({ businessId: access.business.id, userId: access.user.id, action: "product.created", entityType: "product", entityId: product.id, metadata: { sku: parsed.data.sku } });
     });
   } catch (error) { if ((error as { code?: string }).code === "23505") redirect("/products/new?error=That+SKU+or+barcode+already+exists."); throw error; }
-  revalidatePath("/products"); redirect("/products");
+  revalidatePath("/products"); redirect(withToast("/products", "Product created successfully."));
 }
 
 export async function updateProductAction(formData: FormData) {
@@ -57,5 +58,5 @@ export async function updateProductAction(formData: FormData) {
     throw error;
   }
   revalidatePath("/products");
-  redirect("/products");
+  redirect(withToast("/products", "Product updated successfully."));
 }
