@@ -16,6 +16,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:verify": "tsx src/db/verify.ts",
     "db:seed": "tsx src/db/seed/phase1.ts",
+    "db:seed:catalog": "tsx src/db/seed/expand-catalog.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

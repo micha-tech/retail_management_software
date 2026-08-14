@@ -36,7 +36,7 @@ See [architecture](./docs/ARCHITECTURE.md), [proposed schema](./docs/DATABASE_SC
 2. Copy `.env.example` to `.env.local` and set `DATABASE_URL`.
 3. Run `npm install`.
 4. Run `npm run db:migrate`.
-5. Optionally set `SEED_PASSWORD` and run `npm run db:seed` for three branches, five staff, 30 products, branch inventory, and historical sales.
+5. Optionally set `SEED_PASSWORD` and run `npm run db:seed` for three branches, five staff, 60 products, branch inventory, and historical sales. Run `npm run db:seed:catalog` to idempotently expand an existing Relay Market demo database to the full catalogue.
 6. Run `npm run dev` and open `http://localhost:3000/onboarding`.
 
 Quality gates:

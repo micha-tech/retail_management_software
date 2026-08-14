@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import postgres from "postgres";
 
 import { auditLogs, branches, branchAssignments, branchInventory, businessMemberships, businesses, categories, payments, posSessions, products, saleItems, sales, stockMovements, users, type BusinessRole } from "../schema";
+import { seedCategories, seedProducts, seedProductValues } from "./catalog";
 
 loadEnvConfig(process.cwd());
 
@@ -51,10 +52,9 @@ async function main() {
       await tx.insert(businessMemberships).values({ businessId: business.id, userId: user.id, role: member.role });
       await tx.insert(branchAssignments).values(member.branches.map((code) => ({ businessId: business.id, branchId: branchIds.get(code)!, userId: user.id })));
     }
-    const categoryRows = await tx.insert(categories).values(["Beverages","Groceries","Household","Personal Care","Pharmacy"].map((name)=>({businessId:business.id,name}))).returning({id:categories.id,name:categories.name});
+    const categoryRows = await tx.insert(categories).values(seedCategories.map((name)=>({businessId:business.id,name}))).returning({id:categories.id,name:categories.name});
     const categoryIds=new Map(categoryRows.map(c=>[c.name,c.id]));
-    const productNames=["Coca-Cola 50cl","Pepsi 50cl","Bottled Water 75cl","Orange Juice 1L","Malt Drink 33cl","Rice 1kg","Beans 1kg","Garri 1kg","Spaghetti 500g","Noodles 120g","Vegetable Oil 1L","Tomato Paste 400g","Sugar 1kg","Salt 500g","Milk Powder 400g","Breakfast Cereal 500g","Laundry Detergent 1kg","Dishwashing Liquid 500ml","Toilet Tissue 4 Pack","Bleach 1L","Bath Soap 150g","Toothpaste 140g","Body Lotion 400ml","Shampoo 400ml","Deodorant 200ml","Paracetamol 500mg","Vitamin C Tablets","Hand Sanitizer 250ml","Face Mask 10 Pack","Cotton Wool 100g"];
-    const productRows=await tx.insert(products).values(productNames.map((name,index)=>({businessId:business.id,categoryId:categoryIds.get(index<5?"Beverages":index<16?"Groceries":index<20?"Household":index<25?"Personal Care":"Pharmacy"),name,sku:`SKU-${String(index+1).padStart(3,"0")}`,barcode:`100000000${String(index+1).padStart(3,"0")}`,sellingPrice:BigInt(15000+index*2500),costPrice:BigInt(9000+index*1800),unit:"each",minimumStockLevel:10}))).returning();
+    const productRows=await tx.insert(products).values(seedProducts.map((product,index)=>({businessId:business.id,categoryId:categoryIds.get(product.category),...seedProductValues(product,index)}))).returning();
     const inventoryBalances=new Map<string,number>();
     for(const branch of createdBranches){for(const [index,product] of productRows.entries()){const quantity=80+(index%7)*10;await tx.insert(branchInventory).values({businessId:business.id,branchId:branch.id,productId:product.id,quantityOnHand:quantity,reorderLevel:10});await tx.insert(stockMovements).values({businessId:business.id,branchId:branch.id,productId:product.id,movementType:"OPENING_STOCK",quantity,quantityBefore:0,quantityAfter:quantity,referenceType:"development_seed",referenceId:business.id,reason:"Realistic development opening stock",performedBy:ownerId});inventoryBalances.set(`${branch.id}:${product.id}`,quantity);}}
     const cashierId=staffIds.get("cashier.ikeja@relay.example")!;const ikejaId=branchIds.get("IKJ")!;
