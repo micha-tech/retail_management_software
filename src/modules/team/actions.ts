@@ -18,7 +18,7 @@ import { createStaffSchema, updateStaffSchema } from "@/modules/team/schemas";
 const staffFieldLabels: Record<string, string> = {
   name: "Full name",
   email: "Login email",
-  initialPassword: "Initial password",
+  initialPassword: "Login password",
   role: "Role",
   branchIds: "Branch assignment",
   permissions: "Feature access",
@@ -59,7 +59,7 @@ export async function createStaffAction(formData: FormData) {
         const [usage] = await tx.execute<{ count:number }>(sql`select count(*)::int count from business_memberships where business_id=${access.business.id} and active=true`);
         if ((usage?.count ?? 0) >= access.subscription.employeeLimit) throw new Error("SUBSCRIPTION_EMPLOYEE_LIMIT");
       }
-      const [staff] = await tx.insert(users).values({ name: parsed.data.name, email: normalizeEmail(parsed.data.email), passwordHash, mustChangePassword: true }).returning({ id: users.id });
+      const [staff] = await tx.insert(users).values({ name: parsed.data.name, email: normalizeEmail(parsed.data.email), passwordHash, mustChangePassword: false }).returning({ id: users.id });
       await tx.insert(businessMemberships).values({ businessId: access.business.id, userId: staff.id, role: parsed.data.role, permissions: selectedPermissions });
       if (assignedBranches.length) await tx.insert(branchAssignments).values(assignedBranches.map((branch) => ({ businessId: access.business.id, branchId: branch.id, userId: staff.id })));
       await tx.insert(auditLogs).values({ businessId: access.business.id, userId: access.user.id, action: "user.created", entityType: "user", entityId: staff.id, ipAddress: requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || null, metadata: { role: parsed.data.role, permissions: selectedPermissions, branchIds: assignedBranches.map((branch) => branch.id) } });

@@ -23,7 +23,7 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       <div className="form-grid">
         <label>Full name<input name="name" autoComplete="name" required /></label>
         <label>Login email<input name="email" type="email" autoComplete="email" required /></label>
-        <label>Initial login password<input name="initialPassword" type="password" minLength={12} maxLength={128} pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,128}" title="Use 12 or more characters with an uppercase letter, a lowercase letter, and a number." autoComplete="new-password" required /><small>Use 12+ characters with uppercase, lowercase, and a number. The employee must replace it at first sign-in.</small></label>
+        <label>Login password<input name="initialPassword" type="password" minLength={12} maxLength={128} pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,128}" title="Use 12 or more characters with an uppercase letter, a lowercase letter, and a number." autoComplete="new-password" required /><small>Use 12+ characters with uppercase, lowercase, and a number. This is the employee&apos;s login password.</small></label>
       </div>
       <StaffAccessFields branches={activeBranches} roles={roles} initialRole="CASHIER" initialPermissions={defaultPermissionsForRole("CASHIER")} initialBranchIds={activeBranches.length === 1 ? [activeBranches[0].id] : []}/>
       {error && <p className="form-error" role="alert" aria-live="polite">{error}</p>}
