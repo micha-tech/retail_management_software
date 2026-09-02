@@ -51,7 +51,7 @@ input:focus, select:focus, textarea:focus { border-color:var(--green); box-shado
 .business-switch { display:flex; flex-direction:column; gap:4px; margin:30px 10px 20px; padding:2px 0 2px 11px; border-left:2px solid #bdd8c9; }
 .business-switch small,.account small { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
 .business-switch strong { overflow:hidden; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
-nav { display:flex; flex:1; flex-direction:column; gap:2px; }
+nav { display:flex; flex:1; flex-direction:column; gap:2px; min-height:0; overflow-y:auto; scrollbar-width:thin; }
 nav a { position:relative; display:flex; align-items:center; gap:11px; min-height:39px; padding:0 11px; border-radius:8px; color:#59655d; font-size:13px; font-weight:580; transition:background-color .16s,color .16s,transform .16s; }
 nav a:hover { background:var(--soft); color:var(--ink); transform:translateX(1px); }
 .app-shell nav a.active { background:var(--green-pale); color:var(--green-dark); font-weight:670; }
