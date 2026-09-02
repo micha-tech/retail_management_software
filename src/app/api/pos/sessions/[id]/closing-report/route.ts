@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/db/client";
-import { branches, cashMovements, payments, posSessions, saleItems, sales, users } from "@/db/schema";
+import { branches, cashMovements, paymentBanks, payments, posSessions, saleItems, sales, users } from "@/db/schema";
 import { requireBranchAccess, requirePermission } from "@/modules/auth/authorization";
 import { buildClosingReportPdf, closingReportFilename, type ClosingReportPayment } from "@/modules/pos/closing-report-pdf";
 
@@ -52,8 +52,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .innerJoin(sales, eq(sales.id, saleItems.saleId))
       .where(and(eq(sales.businessId, access.business.id), eq(sales.branchId, session.branchId), eq(sales.posSessionId, session.id)))
       .groupBy(saleItems.saleId),
-    db.select({ saleId: payments.saleId, method: payments.paymentMethod, amount: payments.amount, status: payments.status })
+    db.select({ saleId: payments.saleId, method: payments.paymentMethod, amount: payments.amount, status: payments.status, bankName: paymentBanks.bankName, accountNumber: paymentBanks.accountNumber })
       .from(payments)
+      .leftJoin(paymentBanks, eq(paymentBanks.id, payments.paymentBankId))
       .where(and(eq(payments.businessId, access.business.id), eq(payments.branchId, session.branchId), eq(payments.posSessionId, session.id))),
     db.select({ type: cashMovements.type, amount: cashMovements.amount, reason: cashMovements.reason, createdAt: cashMovements.createdAt })
       .from(cashMovements)
@@ -67,7 +68,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   for (const payment of paymentRows) {
     if (payment.status !== "COMPLETED") continue;
     const methods = methodsBySale.get(payment.saleId) ?? new Set<string>();
-    methods.add(payment.method);
+    methods.add(payment.bankName ? `BANK_TRANSFER (${payment.bankName} …${payment.accountNumber?.slice(-4)})` : payment.method);
     methodsBySale.set(payment.saleId, methods);
     paymentTotals.set(payment.method, (paymentTotals.get(payment.method) ?? 0n) + payment.amount);
   }
