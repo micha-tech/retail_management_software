@@ -31,4 +31,9 @@ describe("role permissions", () => {
   it("never restricts the business owner with stored overrides", () => {
     expect(hasPermission("OWNER", "business:manage", [])).toBe(true);
   });
+
+  it("allows credit sales only when credit management is assigned", () => {
+    expect(hasPermission("CASHIER", "credit:manage")).toBe(false);
+    expect(hasPermission("CASHIER", "credit:manage", ["pos:operate", "credit:manage"])).toBe(true);
+  });
 });

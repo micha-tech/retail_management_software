@@ -2,17 +2,17 @@ import "server-only";
 import { and, eq, inArray, sql, sum } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db/client";
-import { auditLogs, branchInventory, cashMovements, paymentBanks, payments, posSessions, products, saleItems, sales, stockMovements, type PaymentMethod } from "@/db/schema";
+import { auditLogs, branchInventory, cashMovements, creditCustomers, creditEntries, paymentBanks, payments, posSessions, products, saleItems, sales, stockMovements, type PaymentMethod } from "@/db/schema";
 import { ApplicationError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { activeInventoryCount, inventoryBranchLock } from "@/modules/inventory/count-guard";
 import { calculateLineTotal, calculateSaleTotal } from "@/lib/money";
 
-export type CheckoutInput = { businessId: string; branchId: string; cashierId: string; sessionId: string; idempotencyKey: string; discountTotal?: bigint; items: { productId: string; quantity: number }[]; payments: { method: PaymentMethod; amount: bigint; reference?: string; paymentBankId?: string | null }[] };
+export type CheckoutInput = { businessId: string; branchId: string; cashierId: string; sessionId: string; idempotencyKey: string; discountTotal?: bigint; items: { productId: string; quantity: number }[]; payments: { method: PaymentMethod; amount: bigint; reference?: string; paymentBankId?: string | null }[]; credit?: { customerId: string; amount: bigint; dueDate?: Date | null; notes?: string } };
 
 export async function checkout(input: CheckoutInput) {
   if (!input.items.length || new Set(input.items.map((i) => i.productId)).size !== input.items.length) throw new ApplicationError("Cart items must be unique.", "INVALID_CART");
-  if (!input.payments.length || input.idempotencyKey.length < 12 || input.idempotencyKey.length > 100) throw new ApplicationError("Checkout details are invalid.", "INVALID_CHECKOUT");
+  if ((!input.payments.length && !input.credit) || input.idempotencyKey.length < 12 || input.idempotencyKey.length > 100) throw new ApplicationError("Checkout details are invalid.", "INVALID_CHECKOUT");
   const existing = await db.select().from(sales).where(and(eq(sales.businessId, input.businessId), eq(sales.idempotencyKey, input.idempotencyKey))).limit(1);
   if (existing[0]) return existing[0];
   try {
@@ -29,7 +29,11 @@ export async function checkout(input: CheckoutInput) {
       const byId = new Map(catalogue.map((p) => [p.id, p]));
       const calculated = sortedItems.map((item) => { const product = byId.get(item.productId)!; return { product, quantity: item.quantity, lineTotal: calculateLineTotal(item.quantity, product.sellingPrice) }; });
       const subtotal = calculated.reduce((total, line) => total + line.lineTotal, 0n); const discountTotal = input.discountTotal ?? 0n; let total: bigint; try { total = calculateSaleTotal(subtotal, discountTotal); } catch { throw new ApplicationError("Discount cannot exceed the sale subtotal.", "INVALID_DISCOUNT"); }
-      if (input.payments.some((p) => p.amount <= 0n) || input.payments.reduce((amount, p) => amount + p.amount, 0n) !== total) throw new ApplicationError("Payment amount does not match sale total.", "PAYMENT_MISMATCH");
+      const creditAmount = input.credit?.amount ?? 0n;
+      if (input.payments.some((p) => p.amount <= 0n) || creditAmount < 0n || input.payments.reduce((amount, p) => amount + p.amount, creditAmount) !== total) throw new ApplicationError("Payments and credit must match the sale total.", "PAYMENT_MISMATCH");
+      if (creditAmount === 0n && input.credit) throw new ApplicationError("Credit amount must be greater than zero.", "INVALID_CREDIT");
+      const [creditCustomer] = input.credit ? await tx.select({ id: creditCustomers.id }).from(creditCustomers).where(and(eq(creditCustomers.id, input.credit.customerId), eq(creditCustomers.businessId, input.businessId), eq(creditCustomers.active, true))).limit(1) : [];
+      if (input.credit && !creditCustomer) throw new ApplicationError("Select an active credit customer.", "INVALID_CREDIT_CUSTOMER");
       const banks = input.payments.some((p) => p.method === "BANK_TRANSFER") ? await tx.select().from(paymentBanks).where(and(eq(paymentBanks.businessId, input.businessId), eq(paymentBanks.active, true), inArray(paymentBanks.id, input.payments.filter((p) => p.method === "BANK_TRANSFER").map((p) => p.paymentBankId!)))) : [];
       if (input.payments.some((p) => p.method === "BANK_TRANSFER" && (!p.paymentBankId || !banks.some((b) => b.id === p.paymentBankId)))) throw new ApplicationError("Select a valid payment bank for bank transfers.", "INVALID_PAYMENT_BANK");
       for (const line of calculated.filter((line) => line.product.trackInventory)) {
@@ -37,13 +41,14 @@ export async function checkout(input: CheckoutInput) {
         if (!locked[0] || locked[0].quantity_on_hand < line.quantity) throw new ApplicationError(`Insufficient inventory for ${line.product.name}.`, "INSUFFICIENT_INVENTORY", 409);
       }
       const saleNumber = `SAL-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
-      const [sale] = await tx.insert(sales).values({ businessId: input.businessId, branchId: input.branchId, posSessionId: input.sessionId, cashierId: input.cashierId, saleNumber, subtotal, discountTotal, total, idempotencyKey: input.idempotencyKey }).returning();
+      const [sale] = await tx.insert(sales).values({ businessId: input.businessId, branchId: input.branchId, posSessionId: input.sessionId, cashierId: input.cashierId, creditCustomerId: creditCustomer?.id ?? null, saleNumber, subtotal, discountTotal, total, idempotencyKey: input.idempotencyKey }).returning();
       for (const line of calculated) {
         await tx.insert(saleItems).values({ saleId: sale.id, productId: line.product.id, productNameSnapshot: line.product.name, skuSnapshot: line.product.sku, quantity: line.quantity, unitPrice: line.product.sellingPrice, costPriceSnapshot: line.product.costPrice, lineTotal: line.lineTotal });
         if (line.product.trackInventory) { const [balance] = await tx.update(branchInventory).set({ quantityOnHand: sql`${branchInventory.quantityOnHand} - ${line.quantity}`, updatedAt: new Date() }).where(and(eq(branchInventory.branchId, input.branchId), eq(branchInventory.productId, line.product.id))).returning({ after: branchInventory.quantityOnHand }); await tx.insert(stockMovements).values({ businessId: input.businessId, branchId: input.branchId, productId: line.product.id, movementType: "SALE", quantity: -line.quantity, quantityBefore: balance.after + line.quantity, quantityAfter: balance.after, referenceType: "sale", referenceId: sale.id, performedBy: input.cashierId }); }
       }
-      await tx.insert(payments).values(input.payments.map((payment) => ({ businessId: input.businessId, branchId: input.branchId, saleId: sale.id, posSessionId: input.sessionId, paymentMethod: payment.method, paymentBankId: payment.paymentBankId || null, amount: payment.amount, reference: payment.reference || null, receivedBy: input.cashierId })));
-      await tx.insert(auditLogs).values({ businessId: input.businessId, branchId: input.branchId, userId: input.cashierId, action: "sale.completed", entityType: "sale", entityId: sale.id, metadata: { saleNumber, subtotal: subtotal.toString(), discountTotal: discountTotal.toString(), total: total.toString(), itemCount: calculated.length } });
+      if (input.payments.length) await tx.insert(payments).values(input.payments.map((payment) => ({ businessId: input.businessId, branchId: input.branchId, saleId: sale.id, posSessionId: input.sessionId, paymentMethod: payment.method, paymentBankId: payment.paymentBankId || null, amount: payment.amount, reference: payment.reference || null, receivedBy: input.cashierId })));
+      if (input.credit) await tx.insert(creditEntries).values({ businessId: input.businessId, branchId: input.branchId, customerId: input.credit.customerId, saleId: sale.id, type: "SALE", amount: creditAmount, dueDate: input.credit.dueDate || null, notes: input.credit.notes?.trim() || null, recordedBy: input.cashierId });
+      await tx.insert(auditLogs).values({ businessId: input.businessId, branchId: input.branchId, userId: input.cashierId, action: input.credit ? "sale.completed_on_credit" : "sale.completed", entityType: "sale", entityId: sale.id, metadata: { saleNumber, subtotal: subtotal.toString(), discountTotal: discountTotal.toString(), total: total.toString(), creditAmount: creditAmount.toString(), itemCount: calculated.length } });
       return sale;
     });
   } catch (error) {

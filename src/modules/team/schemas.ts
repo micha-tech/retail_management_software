@@ -8,6 +8,7 @@ function validateAccess(data: { permissions: string[] }, context: z.RefinementCt
   if (data.permissions.length === 0) context.addIssue({ code: "custom", path: ["permissions"], message: "Select at least one feature." });
   if (data.permissions.includes("inventory:manage") && !data.permissions.includes("inventory:read")) context.addIssue({ code: "custom", path: ["permissions"], message: "Inventory operations require inventory view access." });
   if (data.permissions.includes("branch:manage") && !data.permissions.includes("branch:read")) context.addIssue({ code: "custom", path: ["permissions"], message: "Branch management requires branch view access." });
+  if (data.permissions.includes("credit:manage") && !data.permissions.includes("pos:operate")) context.addIssue({ code: "custom", path: ["permissions"], message: "Credit management requires point-of-sale access." });
 }
 
 export const createStaffSchema = z.object({

@@ -3,7 +3,7 @@ import { and, eq, sum } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { closeDatabase, db } from "@/db/client";
-import { branchAssignments, branchInventory, branches, businessMemberships, businesses, categories, inventoryCountItems, payments, posSessions, products, sales, stockMovements, users } from "@/db/schema";
+import { branchAssignments, branchInventory, branches, businessMemberships, businesses, categories, creditCustomers, creditEntries, inventoryCountItems, paymentBanks, payments, posSessions, products, sales, stockMovements, users } from "@/db/schema";
 import { createInventoryCount, importInventoryCountEntries, postInventoryCount, startInventoryCount, submitInventoryCountForReview } from "@/modules/inventory/count-service";
 import { receiveStock } from "@/modules/inventory/service";
 import { checkout, closePosSession, openPosSession } from "@/modules/pos/service";
@@ -14,7 +14,7 @@ const enabled = Boolean(process.env.TEST_DATABASE_URL);
 const suite = enabled ? describe : describe.skip;
 
 suite("transactional retail workflows", () => {
-  const fixture = { businessId: "", sourceId: "", destinationId: "", userId: "", productId: "", sessionId: "", firstSaleId: "" };
+  const fixture = { businessId: "", sourceId: "", destinationId: "", userId: "", productId: "", sessionId: "", firstSaleId: "", customerId: "", bankId: "" };
 
   beforeAll(async () => {
     const suffix = randomUUID().slice(0,8);
@@ -25,7 +25,9 @@ suite("transactional retail workflows", () => {
     await db.insert(branchAssignments).values([{ businessId: business.id, branchId: source.id, userId: user.id },{ businessId: business.id, branchId: destination.id, userId: user.id }]);
     const [category] = await db.insert(categories).values({ businessId: business.id, name: `Beverages ${suffix}` }).returning();
     const [product] = await db.insert(products).values({ businessId: business.id, categoryId: category.id, name: "Integration Cola", sku: `COLA-${suffix}`, sellingPrice: 50_000n, costPrice: 30_000n, trackInventory: true }).returning();
-    Object.assign(fixture,{businessId:business.id,sourceId:source.id,destinationId:destination.id,userId:user.id,productId:product.id});
+    const [customer] = await db.insert(creditCustomers).values({ businessId: business.id, name: "Integration Customer", phone: `080${suffix}` }).returning();
+    const [bank] = await db.insert(paymentBanks).values({ businessId: business.id, bankName: "Test Bank", branchName: "Source", accountName: "Integration", accountNumber: `9${suffix.replaceAll("-","").replaceAll(/[a-f]/g,"1")}` }).returning();
+    Object.assign(fixture,{businessId:business.id,sourceId:source.id,destinationId:destination.id,userId:user.id,productId:product.id,customerId:customer.id,bankId:bank.id});
   });
 
   afterAll(async () => { if (enabled) await closeDatabase(); });
@@ -45,6 +47,14 @@ suite("transactional retail workflows", () => {
     expect(retry.id).toBe(first.id);
     const matching = await db.select().from(sales).where(and(eq(sales.businessId,fixture.businessId),eq(sales.idempotencyKey,input.idempotencyKey)));
     expect(matching).toHaveLength(1);
+  });
+
+  it("supports cash, transfer, and optional zero-down credit in one sale", async () => {
+    const sale=await checkout({businessId:fixture.businessId,branchId:fixture.sourceId,cashierId:fixture.userId,sessionId:fixture.sessionId,idempotencyKey:randomUUID(),items:[{productId:fixture.productId,quantity:1}],payments:[{method:"CASH",amount:10_000n},{method:"BANK_TRANSFER",amount:15_000n,paymentBankId:fixture.bankId}],credit:{customerId:fixture.customerId,amount:25_000n}});
+    const [charge]=await db.select().from(creditEntries).where(eq(creditEntries.saleId,sale.id));
+    const tender=await db.select().from(payments).where(eq(payments.saleId,sale.id));
+    expect(charge).toMatchObject({customerId:fixture.customerId,type:"SALE",amount:25_000n});
+    expect(tender.reduce((sum,payment)=>sum+payment.amount,0n)).toBe(25_000n);
   });
 
   it("allows only one competing sale when stock is insufficient for both", async () => {

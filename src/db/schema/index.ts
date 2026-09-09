@@ -98,7 +98,7 @@ export const businessMemberships = pgTable(
     primaryKey({ columns: [table.businessId, table.userId] }),
     index("memberships_user_active_idx").on(table.userId, table.active),
     index("memberships_business_role_idx").on(table.businessId, table.role),
-    check("memberships_permissions_valid_ck", sql`${table.permissions} IS NULL OR ${table.permissions} <@ ARRAY['business:manage','dashboard:read','branch:read','branch:manage','team:manage','product:manage','inventory:read','inventory:manage','pos:operate','sales:read','report:read','audit:read']::text[]`),
+    check("memberships_permissions_valid_ck", sql`${table.permissions} IS NULL OR ${table.permissions} <@ ARRAY['business:manage','dashboard:read','branch:read','branch:manage','team:manage','product:manage','inventory:read','inventory:manage','pos:operate','sales:read','credit:manage','report:read','audit:read']::text[]`),
   ],
 );
 
@@ -221,6 +221,7 @@ export const posSessionStatusEnum = pgEnum("pos_session_status", ["OPEN", "CLOSE
 export const saleStatusEnum = pgEnum("sale_status", ["COMPLETED", "VOIDED", "REFUNDED"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["CASH", "BANK_TRANSFER", "CARD", "MOBILE_MONEY", "OTHER"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["COMPLETED", "REFUNDED", "FAILED"]);
+export const creditEntryTypeEnum = pgEnum("credit_entry_type", ["SALE", "PAYMENT", "ADJUSTMENT_IN", "ADJUSTMENT_OUT", "REVERSAL"]);
 export const cashMovementTypeEnum = pgEnum("cash_movement_type", ["CASH_IN", "CASH_OUT"]);
 export const transferStatusEnum = pgEnum("stock_transfer_status", ["DRAFT", "IN_TRANSIT", "RECEIVED", "CANCELLED"]);
 export const inventoryCountStatusEnum = pgEnum("inventory_count_status", ["DRAFT", "COUNTING", "REVIEW", "POSTED", "CANCELLED"]);
@@ -362,8 +363,8 @@ export const cashMovements = pgTable("cash_movements", {
 }, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"cash_movements_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.posSessionId],foreignColumns:[posSessions.businessId,posSessions.branchId,posSessions.id],name:"cash_movements_tenant_session_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.performedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"cash_movements_membership_fk"}).onDelete("restrict"),index("cash_movements_session_created_idx").on(table.posSessionId, table.createdAt), check("cash_movements_amount_positive_ck", sql`${table.amount} > 0`)]);
 
 export const sales = pgTable("sales", {
-  id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), posSessionId: uuid("pos_session_id").notNull().references(() => posSessions.id, { onDelete: "restrict" }), cashierId: uuid("cashier_id").notNull().references(() => users.id, { onDelete: "restrict" }), saleNumber: text("sale_number").notNull(), subtotal: bigint("subtotal", { mode: "bigint" }).notNull(), discountTotal: bigint("discount_total", { mode: "bigint" }).notNull().default(sql`0`), taxTotal: bigint("tax_total", { mode: "bigint" }).notNull().default(sql`0`), total: bigint("total", { mode: "bigint" }).notNull(), status: saleStatusEnum("status").notNull().default("COMPLETED"), idempotencyKey: text("idempotency_key").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [uniqueIndex("sales_business_number_uq").on(table.businessId, table.saleNumber), uniqueIndex("sales_business_idempotency_uq").on(table.businessId, table.idempotencyKey),uniqueIndex("sales_business_branch_id_uq").on(table.businessId,table.branchId,table.id),foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"sales_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.posSessionId],foreignColumns:[posSessions.businessId,posSessions.branchId,posSessions.id],name:"sales_tenant_session_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.cashierId],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"sales_membership_fk"}).onDelete("restrict"), index("sales_business_branch_created_idx").on(table.businessId, table.branchId, table.createdAt), index("sales_cashier_created_idx").on(table.cashierId, table.createdAt), check("sales_totals_ck", sql`${table.subtotal} >= 0 AND ${table.discountTotal} >= 0 AND ${table.taxTotal} >= 0 AND ${table.total} = ${table.subtotal} - ${table.discountTotal} + ${table.taxTotal} AND ${table.total} >= 0`)]);
+  id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), posSessionId: uuid("pos_session_id").notNull().references(() => posSessions.id, { onDelete: "restrict" }), cashierId: uuid("cashier_id").notNull().references(() => users.id, { onDelete: "restrict" }), creditCustomerId: uuid("credit_customer_id"), saleNumber: text("sale_number").notNull(), subtotal: bigint("subtotal", { mode: "bigint" }).notNull(), discountTotal: bigint("discount_total", { mode: "bigint" }).notNull().default(sql`0`), taxTotal: bigint("tax_total", { mode: "bigint" }).notNull().default(sql`0`), total: bigint("total", { mode: "bigint" }).notNull(), status: saleStatusEnum("status").notNull().default("COMPLETED"), idempotencyKey: text("idempotency_key").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("sales_business_number_uq").on(table.businessId, table.saleNumber), uniqueIndex("sales_business_idempotency_uq").on(table.businessId, table.idempotencyKey),uniqueIndex("sales_business_branch_id_uq").on(table.businessId,table.branchId,table.id),foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"sales_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.posSessionId],foreignColumns:[posSessions.businessId,posSessions.branchId,posSessions.id],name:"sales_tenant_session_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.cashierId],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"sales_membership_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.creditCustomerId],foreignColumns:[creditCustomers.businessId,creditCustomers.id],name:"sales_tenant_credit_customer_fk"}).onDelete("restrict"), index("sales_business_branch_created_idx").on(table.businessId, table.branchId, table.createdAt), index("sales_cashier_created_idx").on(table.cashierId, table.createdAt), check("sales_totals_ck", sql`${table.subtotal} >= 0 AND ${table.discountTotal} >= 0 AND ${table.taxTotal} >= 0 AND ${table.total} = ${table.subtotal} - ${table.discountTotal} + ${table.taxTotal} AND ${table.total} >= 0`)]);
 
 export const saleItems = pgTable("sale_items", {
   id: uuid("id").primaryKey().defaultRandom(), saleId: uuid("sale_id").notNull().references(() => sales.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), productNameSnapshot: text("product_name_snapshot").notNull(), skuSnapshot: text("sku_snapshot").notNull(), quantity: integer("quantity").notNull(), unitPrice: bigint("unit_price", { mode: "bigint" }).notNull(), costPriceSnapshot: bigint("cost_price_snapshot", { mode: "bigint" }).notNull(), discount: bigint("discount", { mode: "bigint" }).notNull().default(sql`0`), lineTotal: bigint("line_total", { mode: "bigint" }).notNull(),
@@ -376,6 +377,49 @@ export const paymentBanks = pgTable("payment_banks", {
 export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), saleId: uuid("sale_id").notNull().references(() => sales.id, { onDelete: "restrict" }), posSessionId: uuid("pos_session_id").notNull().references(() => posSessions.id, { onDelete: "restrict" }), paymentMethod: paymentMethodEnum("payment_method").notNull(), paymentBankId: uuid("payment_bank_id"), amount: bigint("amount", { mode: "bigint" }).notNull(), reference: text("reference"), status: paymentStatusEnum("status").notNull().default("COMPLETED"), receivedBy: uuid("received_by").notNull().references(() => users.id, { onDelete: "restrict" }), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"payments_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.saleId],foreignColumns:[sales.businessId,sales.branchId,sales.id],name:"payments_tenant_sale_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.posSessionId],foreignColumns:[posSessions.businessId,posSessions.branchId,posSessions.id],name:"payments_tenant_session_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.paymentBankId],foreignColumns:[paymentBanks.businessId,paymentBanks.id],name:"payments_tenant_bank_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.receivedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"payments_membership_fk"}).onDelete("restrict"),index("payments_business_branch_created_idx").on(table.businessId, table.branchId, table.createdAt), index("payments_sale_idx").on(table.saleId), index("payments_session_method_idx").on(table.posSessionId, table.paymentMethod), check("payments_amount_positive_ck", sql`${table.amount} > 0`)]);
+
+export const creditCustomers = pgTable("credit_customers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  address: text("address"),
+  notes: text("notes"),
+  active: boolean("active").notNull().default(true),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("credit_customers_business_phone_uq").on(table.businessId, table.phone),
+  uniqueIndex("credit_customers_business_id_uq").on(table.businessId, table.id),
+  index("credit_customers_business_name_idx").on(table.businessId, table.name),
+  check("credit_customers_name_phone_ck", sql`${table.name} = trim(${table.name}) AND char_length(${table.name}) >= 2 AND ${table.phone} = trim(${table.phone}) AND char_length(${table.phone}) >= 7`),
+]);
+
+export const creditEntries = pgTable("credit_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }),
+  customerId: uuid("customer_id").notNull().references(() => creditCustomers.id, { onDelete: "restrict" }),
+  saleId: uuid("sale_id").references(() => sales.id, { onDelete: "restrict" }),
+  type: creditEntryTypeEnum("type").notNull(),
+  amount: bigint("amount", { mode: "bigint" }).notNull(),
+  paymentMethod: paymentMethodEnum("payment_method"),
+  paymentBankId: uuid("payment_bank_id"),
+  reference: text("reference"),
+  notes: text("notes"),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  recordedBy: uuid("recorded_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.businessId, table.branchId], foreignColumns: [branches.businessId, branches.id], name: "credit_entries_tenant_branch_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.customerId], foreignColumns: [creditCustomers.businessId, creditCustomers.id], name: "credit_entries_tenant_customer_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.paymentBankId], foreignColumns: [paymentBanks.businessId, paymentBanks.id], name: "credit_entries_tenant_bank_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.recordedBy], foreignColumns: [businessMemberships.businessId, businessMemberships.userId], name: "credit_entries_membership_fk" }).onDelete("restrict"),
+  uniqueIndex("credit_entries_sale_charge_uq").on(table.saleId).where(sql`${table.type} = 'SALE'`),
+  index("credit_entries_customer_created_idx").on(table.customerId, table.createdAt),
+  index("credit_entries_business_branch_created_idx").on(table.businessId, table.branchId, table.createdAt),
+  check("credit_entries_amount_positive_ck", sql`${table.amount} > 0`),
+]);
 
 export const stockTransfers = pgTable("stock_transfers", {
   id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), sourceBranchId: uuid("source_branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), destinationBranchId: uuid("destination_branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), transferNumber: text("transfer_number").notNull(), status: transferStatusEnum("status").notNull().default("DRAFT"), initiatedBy: uuid("initiated_by").notNull().references(() => users.id, { onDelete: "restrict" }), dispatchedBy: uuid("dispatched_by").references(() => users.id, { onDelete: "restrict" }), receivedBy: uuid("received_by").references(() => users.id, { onDelete: "restrict" }), notes: text("notes"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), dispatchedAt: timestamp("dispatched_at", { withTimezone: true }), receivedAt: timestamp("received_at", { withTimezone: true }),
