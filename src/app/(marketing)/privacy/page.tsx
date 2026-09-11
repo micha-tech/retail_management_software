@@ -1,0 +1,1 @@
+import type { Metadata } from "next";import { LegalPage } from "@/components/marketing/legal-page";export const metadata:Metadata={title:"Privacy Policy",description:"How Retail Logic handles website and demo request information.",alternates:{canonical:"/privacy"}};export default function Page(){return <LegalPage type="privacy"/>}

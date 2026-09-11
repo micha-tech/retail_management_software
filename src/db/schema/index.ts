@@ -148,6 +148,28 @@ export const loginAttempts = pgTable(
   (table) => [index("login_attempts_email_created_idx").on(table.email, table.createdAt)],
 );
 
+export const demoRequests = pgTable("demo_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fullName: text("full_name").notNull(),
+  workEmail: text("work_email").notNull(),
+  phone: text("phone").notNull(),
+  businessName: text("business_name").notNull(),
+  businessType: text("business_type").notNull(),
+  locationCount: text("location_count").notNull(),
+  employeeCount: text("employee_count").notNull(),
+  currentSoftware: text("current_software"),
+  primaryChallenge: text("primary_challenge").notNull(),
+  preferredContact: text("preferred_contact").notNull(),
+  message: text("message"),
+  consent: boolean("consent").notNull().default(false),
+  status: text("status").notNull().default("NEW"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("demo_requests_created_idx").on(table.createdAt),
+  index("demo_requests_email_created_idx").on(table.workEmail, table.createdAt),
+  check("demo_requests_email_normalized_ck", sql`${table.workEmail} = lower(trim(${table.workEmail}))`),
+]);
+
 export const auditLogs = pgTable(
   "audit_logs",
   {

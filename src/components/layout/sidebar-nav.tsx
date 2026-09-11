@@ -57,7 +57,7 @@ export function SidebarNav({
   const pathname = usePathname();
 
   return (
-    <nav>
+    <nav aria-label="Workspace navigation">
       {navigation
         .filter((item) => !item.permission || hasPermission(role, item.permission, permissions))
         .map((item) => {
@@ -67,6 +67,8 @@ export function SidebarNav({
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
+              title={item.label}
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
             >
@@ -78,6 +80,8 @@ export function SidebarNav({
       {platformAdmin && (
         <Link
           href="/platform"
+          aria-label="Platform"
+          title="Platform"
           className={isActivePath(pathname, "/platform") ? "active" : undefined}
           aria-current={isActivePath(pathname, "/platform") ? "page" : undefined}
         >

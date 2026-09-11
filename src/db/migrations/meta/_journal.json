@@ -85,6 +85,13 @@
       "when": 1788966493745,
       "tag": "0011_goofy_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789143868687,
+      "tag": "0012_flawless_zombie",
+      "breakpoints": true
     }
   ]
 }

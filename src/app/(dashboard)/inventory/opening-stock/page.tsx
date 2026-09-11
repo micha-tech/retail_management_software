@@ -16,7 +16,7 @@ export default async function OpeningStockPage({ searchParams }: { searchParams:
     </header>
     <main className="page narrow">
       <section className="surface">
-        <h2>1. Download a branch file</h2>
+        <h2>Download a branch file</h2>
         <p className="muted">Each CSV is pre-filled with your current products and balances. Change the <code>stock</code> column, then re-upload. Every row must name a branch (<code>branch_code</code> or <code>branch_name</code>).</p>
         <div className="download-list">
           <a className="button secondary inline-button" href="/api/inventory/opening-stock-template" download><FileDown size={17}/> All branches CSV</a>
@@ -24,7 +24,7 @@ export default async function OpeningStockPage({ searchParams }: { searchParams:
         </div>
       </section>
       <section className="surface">
-        <h2>2. Upload</h2>
+        <h2>Upload</h2>
         <form action={importOpeningStockFileAction} className="form-stack">
           <label>Opening stock file<input name="file" type="file" accept=".csv,.xlsx,.xls,text/csv" required/><small>Accepts .csv, .xlsx, or .xls. Maximum 5,000 rows / 5 MB.</small></label>
           {error && <p className="form-error">{error}</p>}
