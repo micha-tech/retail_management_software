@@ -1,16 +1,18 @@
-import { ArrowUpRight, Box, CircleCheck, ShoppingCart } from "lucide-react";
+import Image from "next/image";
 
-export function DashboardPreview({ compact = false }: { compact?: boolean }) {
-  return <div className={`marketing-dashboard ${compact ? "compact" : ""}`} aria-label="Fictional Retail Logic dashboard demonstration">
-    <div className="marketing-demo-label">Interface preview · sample data</div>
-    <div className="dashboard-top"><div><span className="dashboard-wordmark">RL</span><strong>Overview</strong></div><span>All branches⌄</span></div>
-    <div className="dashboard-metrics">
-      <article><span>Monthly revenue</span><strong>₦4,820,500</strong><small className="positive"><ArrowUpRight/>18.4%</small></article>
-      <article><span>Transactions</span><strong>1,284</strong><small>Across 4 branches</small></article>
-      <article><span>Gross profit</span><strong>₦1,247,800</strong><small>25.9% margin</small></article>
-    </div>
-    <div className="dashboard-grid"><article className="dashboard-chart"><div className="dashboard-card-head"><div><span>Sales trend</span><strong>Revenue performance</strong></div><span>30 days</span></div><svg viewBox="0 0 520 170" role="img" aria-label="Upward sales trend"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#168b5b" stopOpacity=".24"/><stop offset="1" stopColor="#168b5b" stopOpacity="0"/></linearGradient></defs><path d="M5 145 C60 128,85 142,125 108 S185 112,225 79 S298 96,338 52 S412 70,515 20 L515 170 L5 170Z" fill="url(#area)"/><path d="M5 145 C60 128,85 142,125 108 S185 112,225 79 S298 96,338 52 S412 70,515 20" fill="none" stroke="#168b5b" strokeWidth="4" strokeLinecap="round"/></svg><div className="chart-axis"><span>Aug 1</span><span>Aug 8</span><span>Aug 15</span><span>Aug 22</span><span>Aug 30</span></div></article>
-      <article className="dashboard-activity"><div className="dashboard-card-head"><div><span>Live operations</span><strong>Recent activity</strong></div><span className="online"><i/> Live</span></div><ul><li><ShoppingCart/><span><strong>Sale RL-1284</strong><small>Lekki · ₦42,650</small></span><time>Now</time></li><li><Box/><span><strong>Low-stock alert</strong><small>Golden Penny Flour</small></span><time>4m</time></li><li><CircleCheck/><span><strong>Stock received</strong><small>Ikeja · 64 units</small></span><time>12m</time></li></ul></article></div>
-    <div className="dashboard-footer-row"><span><i/> All branches online</span><span><b>12</b> low-stock products</span><span>Top branch <b>Lekki</b></span></div>
-  </div>;
+const screens = {
+  overview: { label: "Overview", description: "Retail Logic overview showing branch filters, net sales, average sale, gross profit, inventory value, and branch performance." },
+  inventory: { label: "Inventory", description: "Retail Logic inventory showing actual branch-product balances, quantities, reorder levels, stock values, and stock actions." },
+  branches: { label: "Branches", description: "Retail Logic branch management showing the Abuja Central, Ikeja, and Lekki locations." },
+} as const;
+
+/** Unaltered captures of the running application; see docs/marketing-assets.md. */
+export function DashboardPreview({ compact = false, screen = "overview" }: { compact?: boolean; screen?: keyof typeof screens }) {
+  const capture = screens[screen];
+  return <figure className={`product-capture ${compact ? "compact" : ""}`}>
+    <a className="product-capture-link" href={`/screenshots/${screen}.png`} target="_blank" rel="noopener noreferrer" aria-label={`View full-size ${capture.label} screenshot (opens in a new tab)`}>
+      <Image src={`/screenshots/${screen}.png`} width={878} height={868} alt={capture.description} sizes="(max-width: 680px) 100vw, (max-width: 980px) 90vw, 700px" />
+    </a>
+    <figcaption>{capture.label} <span>Retail Logic · Demo workspace</span></figcaption>
+  </figure>;
 }
