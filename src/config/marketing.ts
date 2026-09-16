@@ -5,7 +5,7 @@ export const siteConfig = {
   name: "Retail Logic",
   description: "Manage sales, inventory, customers, employees, suppliers, expenses, multiple branches, and e-commerce operations with Retail Logic.",
   loginUrl: "/login",
-  demoUrl: "/book-demo",
+  demoUrl: "/demo",
   contact: { email: "", phone: "", whatsapp: "" },
   socialLinks: [] as { label: string; href: string }[],
   legalName: "Retail Logic",
@@ -41,7 +41,7 @@ export const capabilities: Capability[] = [
 
 export const pricingTiers = [
   { name: "Starter", summary: "For an independent store building a reliable operating foundation.", features: ["Point of sale", "Products and inventory", "Customer records", "Core reports"], cta: "Request Pricing" },
-  { name: "Business", summary: "For growing retailers that need deeper control and team accountability.", features: ["Everything in Starter", "Multiple employees and roles", "Purchasing and expenses", "Advanced operational reports"], cta: "Book a Demo", featured: true },
+  { name: "Business", summary: "For growing retailers that need deeper control and team accountability.", features: ["Everything in Starter", "Multiple employees and roles", "Purchasing and expenses", "Advanced operational reports"], cta: "Explore the Demo", featured: true },
   { name: "Enterprise", summary: "For multi-location and complex retail organizations.", features: ["Everything in Business", "Multi-branch operations", "Central oversight", "Implementation planning"], cta: "Contact Sales" },
 ];
 

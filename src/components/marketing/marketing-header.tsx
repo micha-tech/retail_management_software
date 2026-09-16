@@ -21,9 +21,9 @@ export function MarketingHeader() {
           <div className="marketing-dropdown">{item.children.map(child => <Link href={child.href} key={child.href}>{child.label}</Link>)}</div>
         </div> : <Link className={pathname === item.href ? "active" : ""} href={item.href} key={item.label}>{item.label}</Link>)}
       </nav>
-      <div className="marketing-nav-actions"><TrackedLink event="sign_in_clicked" href="/login" className="marketing-text-link">Sign In</TrackedLink><TrackedLink event="book_demo_clicked" href="/book-demo" className="marketing-button compact">Book a Demo</TrackedLink></div>
+      <div className="marketing-nav-actions"><TrackedLink event="sign_in_clicked" href="/login" className="marketing-text-link">Sign In</TrackedLink><TrackedLink event="book_demo_clicked" href="/demo" className="marketing-button compact">Explore the Demo</TrackedLink></div>
       <button className="marketing-menu-button" aria-expanded={open} aria-controls="mobile-navigation" aria-label={open ? "Close navigation" : "Open navigation"} onClick={() => setOpen(!open)}>{open ? <X/> : <Menu/>}</button>
     </div>
-    {open && <nav id="mobile-navigation" className="marketing-mobile-nav" aria-label="Mobile navigation" onClick={() => setOpen(false)}>{navItems.map(item => <div key={item.label}><Link href={item.href}>{item.label}</Link>{item.children?.map(child => <Link className="sub" href={child.href} key={child.href}>{child.label}</Link>)}</div>)}<TrackedLink event="sign_in_clicked" href="/login">Sign In</TrackedLink><TrackedLink event="book_demo_clicked" href="/book-demo" className="marketing-button">Book a Demo</TrackedLink></nav>}
+    {open && <nav id="mobile-navigation" className="marketing-mobile-nav" aria-label="Mobile navigation" onClick={() => setOpen(false)}>{navItems.map(item => <div key={item.label}><Link href={item.href}>{item.label}</Link>{item.children?.map(child => <Link className="sub" href={child.href} key={child.href}>{child.label}</Link>)}</div>)}<TrackedLink event="sign_in_clicked" href="/login">Sign In</TrackedLink><TrackedLink event="book_demo_clicked" href="/demo" className="marketing-button">Explore the Demo</TrackedLink></nav>}
   </header>;
 }

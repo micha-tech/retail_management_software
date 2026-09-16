@@ -1,0 +1,105 @@
+/* Shared visual language for the product, public website, and demo. */
+.app-shell, .marketing-site {
+  --ink: #182f2a;
+  --muted: #60736c;
+  --line: #dfe7e2;
+  --line-strong: #c6d4cc;
+  --canvas: #f4f6f3;
+  --green: #167153;
+  --green-dark: #10553f;
+  --green-pale: #e8f3ec;
+  -webkit-font-smoothing: antialiased;
+}
+.app-shell .workspace { background: var(--canvas); }
+.app-shell > aside { background: #122e28; border-color: #29473e; }
+.app-shell .business-switch { background: #1c3a32; border-color: #365247; border-radius: 12px; }
+.app-shell nav :is(a, button) { transition: background-color .15s, color .15s; }
+.app-shell nav :is(a, button).active { background: #2a5041; color: #fff; }
+.app-shell .topbar { padding-top: 32px; padding-bottom: 28px; }
+.app-shell .topbar h1 { font-size: clamp(26px, 2.3vw, 34px); letter-spacing: -.04em; font-weight: 650; }
+.app-shell .topbar > div:first-child { min-width: 0; }
+.app-shell .topbar > select { width: auto; max-width: 280px; }
+.app-shell .section-heading { gap: 18px; margin-bottom: 20px; }
+.app-shell .section-heading h2 { font-size: 19px; letter-spacing: -.025em; }
+.app-shell .section-heading p:not(.eyebrow) { max-width: 66ch; margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.app-shell .surface, .app-shell .metrics article:nth-child(n),
+.app-shell .content-split > .surface:first-child, .app-shell .content-split > .surface:last-child {
+  border-color: var(--line); border-radius: 14px; box-shadow: 0 2px 5px #173d2910;
+}
+.app-shell .content-split { margin-bottom: 22px; }
+.app-shell .metrics article:nth-child(n) { padding: 22px; }
+.app-shell .metrics article:first-child { border-top: 3px solid var(--green); }
+.app-shell .metrics strong { font-variant-numeric: tabular-nums; font-size: clamp(22px, 2.2vw, 30px); }
+.app-shell .metrics span { font-weight: 600; color: #50665c; }
+.app-shell th { background: #f2f6f3; color: #52665c; font-size: 10px; padding-block: 13px; }
+.app-shell td { color: #435a4f; font-variant-numeric: tabular-nums; }
+.app-shell td strong { color: var(--ink); font-weight: 600; }
+.app-shell td small { color: #647a6e; }
+.app-shell tbody tr:hover { background: #f6faf7; }
+.app-shell .pill { font-weight: 600; white-space: nowrap; }
+.app-shell .button { border-radius: 9px; }
+.app-shell :is(input, select, textarea):focus-visible { outline: 2px solid #248465; outline-offset: 2px; }
+.app-shell .filter-bar { margin-bottom: 22px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.app-shell .attention-item { border-radius: 10px; padding: 16px; }
+.app-shell .attention-item.danger { background: #fff8f6; border-color: #ecd2ca; }
+.app-shell .attention-item.warning { background: #fffcf3; border-color: #e6dcbb; }
+.app-shell .attention-item small { color: #637068; line-height: 1.6; }
+.app-shell .payment-list > div { padding-block: 16px; }
+.app-shell .demo-safe-banner { background: #e7f2eb; border-bottom: 1px solid #cbded1; color: #234f3c; font-size: 12px; }
+.app-shell .demo-safe-banner button { min-height: 36px; border-color: #b6cdbf; background: #fff; }
+.app-shell .demo-pos { grid-template-columns: minmax(0, 1fr) minmax(270px, 340px); }
+.app-shell .demo-products button { border-radius: 12px; min-height: 140px; box-shadow: 0 1px 3px #173d290a; }
+.app-shell .demo-products button:hover { background: #f3faf5; border-color: #78a68c; }
+.app-shell .demo-products button b { font-size: 18px; }
+.app-shell .demo-cart { gap: 18px; }
+.app-shell .demo-cart footer { border-top: 1px solid var(--line); padding-top: 20px; }
+.marketing-site { --m-bg: #f7f8f3; --m-ink: #19392c; --m-muted: #586e60; --m-green: #167153; --m-deep: #10553f; --m-line: #dce5da; }
+.marketing-site .marketing-header { background: #f7f8f3f5; border-bottom: 1px solid #e1e8dd; }
+.marketing-site .marketing-nav-wrap { height: 80px; }
+.marketing-site .marketing-button { border-radius: 10px; min-height: 46px; font-size: 14px; font-weight: 650; box-shadow: 0 2px 3px #153b2410; }
+.marketing-site .marketing-button:hover { transform: translateY(-1px); }
+.marketing-site .marketing-button.secondary { border-color: #c5d3c5; background: #ffffffb8; }
+.marketing-site .hero-copy h1, .marketing-site .marketing-page-hero h1 { letter-spacing: -.055em; line-height: 1.06; text-wrap: balance; }
+.marketing-site .marketing-lede { max-width: 57ch; color: var(--m-muted); line-height: 1.75; font-size: 18px; }
+.marketing-site .section-intro h2, .marketing-site .marketing-final-cta h2 { line-height: 1.15; text-wrap: balance; letter-spacing: -.035em; }
+.marketing-site .marketing-section { padding-block: 84px; }
+.marketing-site .marketing-feature-item, .marketing-site .marketing-pricing-grid article,
+.marketing-site .contact-grid article, .marketing-site .solution-card-grid > a { border-radius: 16px; border-color: var(--m-line); box-shadow: 0 4px 18px #213d2505; }
+.marketing-site .marketing-pricing-grid { gap: 20px; }
+.marketing-site .marketing-pricing-grid article.featured { border-color: #528e64; box-shadow: 0 8px 26px #213d2510; }
+.marketing-site .marketing-final-cta { background: #153c2c; border-radius: 22px; }
+.marketing-site .marketing-footer { background: #102b22; }
+.marketing-site .footer-group a { color: #ccdad0; line-height: 1.7; }
+.marketing-site .footer-bottom { color: #adc1b3; }
+.marketing-site :focus-visible { outline: 3px solid #418a65; outline-offset: 4px; }
+@media (min-width: 621px) and (max-width: 900px) {
+  .demo-app > aside { width: 76px; }
+  .demo-app nav button { justify-content: center; padding: 12px 8px; }
+  .demo-app nav button span, .demo-app .brand small { display: none; }
+  .demo-app .brand strong { font-size: 10px; letter-spacing: 0; overflow-wrap: anywhere; }
+}
+@media (max-width: 1100px) {
+  .app-shell .demo-pos { grid-template-columns: 1fr; }
+  .app-shell .demo-cart { min-height: 250px; }
+}
+@media (max-width: 620px) {
+  .app-shell .topbar { padding: 24px 18px; }
+  .app-shell .topbar > select { width: 100%; max-width: none; }
+  .app-shell .metrics article:nth-child(n) { padding: 16px 13px; }
+  .app-shell .metrics strong { font-size: 22px; }
+  .app-shell .filter-bar { padding: 12px; }
+  .app-shell .section-heading { flex-wrap: wrap; }
+  .app-shell .header-actions { flex-wrap: wrap; }
+  .demo-app > aside nav button { width: auto; flex: 0 0 72px; min-width: 72px; min-height: 55px; padding: 6px 3px; flex-direction: column; gap: 5px; font-size: 10px; }
+  .demo-app > aside nav button span { display: block; }
+  .app-shell .demo-safe-banner { gap: 8px; }
+  .app-shell .demo-safe-banner > span { flex-basis: 100%; order: 3; line-height: 1.5; }
+  .marketing-site .marketing-nav-wrap { height: 68px; }
+  .marketing-site .marketing-section { padding-block: 56px; }
+  .marketing-site .marketing-lede { font-size: 16px; }
+  .marketing-site .hero-copy h1 { font-size: clamp(36px, 10vw, 48px); }
+  .marketing-site .marketing-final-cta { padding: 30px 22px; border-radius: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marketing-site .marketing-button:hover { transform: none; }
+}

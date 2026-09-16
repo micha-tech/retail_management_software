@@ -4,6 +4,7 @@ import { requireBusinessAccess } from "@/modules/auth/authorization";
 import { redirect } from "next/navigation";
 import { isPlatformAdminEmail } from "@/modules/platform/authorization";
 import "./workspace.css";
+import "../visual-refinements.css";
 
 export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, business, role, permissions } = await requireBusinessAccess();
