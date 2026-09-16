@@ -12,15 +12,19 @@ export const siteConfig = {
 };
 
 export const navItems = [
-  { label: "Product", href: "/features" },
+  { label: "Product", href: "/features", children: [
+    { label: "Explore the platform", href: "/features" },
+    { label: "Point of sale", href: "/features#point-of-sale" },
+    { label: "Inventory", href: "/features#inventory" },
+    { label: "Purchasing & suppliers", href: "/features#purchasing" },
+    { label: "Reports & insights", href: "/features#reports" },
+  ] },
   { label: "Solutions", href: "/solutions", children: [
     { label: "Supermarkets", href: "/solutions/supermarkets" },
     { label: "Multi-branch retail", href: "/solutions/multi-branch-retail" },
     { label: "E-commerce", href: "/solutions/ecommerce" },
   ] },
-  { label: "Features", href: "/features" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Resources", href: "/features#reports" },
   { label: "Company", href: "/about", children: [
     { label: "About", href: "/about" }, { label: "Contact", href: "/contact" },
   ] },
@@ -55,7 +59,7 @@ export const commonFaqs = [
   { question: "Can Retail Logic support more than one location?", answer: "Yes. Retail Logic is designed to provide centralized visibility while keeping branch inventory, employees, sales, and access clearly separated." },
   { question: "Can employee access be limited?", answer: "Yes. Role-based permissions and branch assignments help ensure each employee sees and performs only the work assigned to them." },
   { question: "Does Retail Logic include inventory and reporting?", answer: "Yes. The platform connects sales with inventory movements and operational reports, including branch, product, cashier, and stock views." },
-  { question: "How do we know which plan fits?", answer: "Book a short walkthrough. We will learn about your locations, team, workflows, and reporting needs before recommending a suitable setup." },
+  { question: "How do we know which plan fits?", answer: "Explore the demo to get familiar with the platform, then talk to our team about your locations, staff, workflows, and reporting needs. We will help you choose a suitable setup." },
 ];
 
 export const industries = ["Supermarkets", "Shopping malls", "Retail stores", "Multi-branch businesses", "Wholesalers", "E-commerce stores"];

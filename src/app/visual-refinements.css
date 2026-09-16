@@ -47,12 +47,29 @@
 .app-shell .payment-list > div { padding-block: 16px; }
 .app-shell .demo-safe-banner { background: #e7f2eb; border-bottom: 1px solid #cbded1; color: #234f3c; font-size: 12px; }
 .app-shell .demo-safe-banner button { min-height: 36px; border-color: #b6cdbf; background: #fff; }
-.app-shell.demo-app .pos-layout { height: auto; min-height: calc(100vh - 230px); border: 1px solid var(--line); border-radius: 14px; }
-.app-shell.demo-app .pos-layout .product-pane { overflow: auto; }
-.app-shell.demo-app .pos-layout .cart-pane { border-left-color: var(--line); }
+@media (min-width: 701px) {
+  .app-shell.demo-app .pos-layout { height: calc(100vh - 226px); min-height: 520px; border: 1px solid var(--line); border-radius: 14px; }
+  .app-shell.demo-app .pos-layout .product-pane { overflow: auto; }
+  .app-shell.demo-app .pos-layout .cart-pane { min-height: 0; border-left-color: var(--line); }
+  .app-shell.demo-app .pos-layout .checkout { overflow: visible; }
+}
 .marketing-site { --m-bg: #f7f8f3; --m-ink: #19392c; --m-muted: #586e60; --m-green: #167153; --m-deep: #10553f; --m-line: #dce5da; }
 .marketing-site .marketing-header { background: #f7f8f3f5; border-bottom: 1px solid #e1e8dd; }
+.marketing-site .marketing-header .marketing-logo { filter: none; }
+.marketing-site .marketing-header .marketing-logo .brand-lockup,
+.marketing-site .marketing-header .marketing-logo .brand-mark {
+  /* The source lockup is white for the dark footer; recolour it for the light header. */
+  filter: brightness(0) saturate(100%) invert(20%) sepia(15%) saturate(1040%) hue-rotate(103deg) brightness(92%) contrast(92%);
+}
+.marketing-site .marketing-header .marketing-desktop-nav a,
+.marketing-site .marketing-header .marketing-nav-group > a,
+.marketing-site .marketing-header .marketing-text-link { color: #344139; }
 .marketing-site .marketing-nav-wrap { height: 80px; }
+.marketing-site .hero-photo-frame { position: relative; overflow: hidden; min-height: 540px; border: 1px solid #d5e2d8; border-radius: 24px; background: #dfece3; box-shadow: 0 28px 70px rgba(18,48,34,.16); }
+.marketing-site .hero-photo { display: block; width: 100%; height: 540px; object-fit: cover; object-position: 55% center; }
+.marketing-site .hero-photo-caption { position: absolute; right: 18px; bottom: 18px; left: 18px; display: flex; padding: 13px 15px; border: 1px solid rgba(255,255,255,.45); border-radius: 12px; background: rgba(12,34,24,.78); color: white; flex-direction: column; gap: 4px; backdrop-filter: blur(12px); }
+.marketing-site .hero-photo-caption span { color: #a8d5b7; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.marketing-site .hero-photo-caption b { font-size: 14px; }
 .marketing-site .marketing-button { border-radius: 10px; min-height: 46px; font-size: 14px; font-weight: 650; box-shadow: 0 2px 3px #153b2410; }
 .marketing-site .marketing-button:hover { transform: translateY(-1px); }
 .marketing-site .marketing-button.secondary { border-color: #c5d3c5; background: #ffffffb8; }
@@ -77,6 +94,8 @@
 }
 @media (max-width: 1100px) {
   .app-shell.demo-app .pos-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 38vw); }
+  .marketing-site .hero-photo-frame { min-height: 420px; }
+  .marketing-site .hero-photo { height: 420px; }
 }
 @media (max-width: 620px) {
   .app-shell .topbar { padding: 24px 18px; }
@@ -94,6 +113,8 @@
   .marketing-site .marketing-section { padding-block: 56px; }
   .marketing-site .marketing-lede { font-size: 16px; }
   .marketing-site .hero-copy h1 { font-size: clamp(36px, 10vw, 48px); }
+  .marketing-site .hero-photo-frame { min-height: 330px; border-radius: 18px; }
+  .marketing-site .hero-photo { height: 330px; object-position: 58% center; }
   .marketing-site .marketing-final-cta { padding: 30px 22px; border-radius: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
