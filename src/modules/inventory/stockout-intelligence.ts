@@ -16,7 +16,7 @@ export type StockoutRiskRecord = StockoutAssessment & {
   incomingQuantity: number;
 };
 
-export async function listStockoutRisk(input: { businessId: string; branchIds: string[]; salesStart: Date; salesEnd: Date; windowDays?: number }) {
+export async function listStockoutRisk(input: { businessId: string; branchIds: string[]; salesStart: string; salesEnd: string; windowDays?: number }) {
   if (!input.branchIds.length) return [] as StockoutRiskRecord[];
   const branchIds = sql.join(input.branchIds.map((id) => sql`${id}`), sql`, `);
   const rows = await db.execute<{ branch_id: string; branch_name: string; product_id: string; product_name: string; sku: string; on_hand: number; trailing_units: number; incoming_quantity: number }>(sql`

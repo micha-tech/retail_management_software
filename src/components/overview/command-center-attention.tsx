@@ -18,7 +18,7 @@ export async function CommandCenterAttention({ businessId, branchIds, currency, 
   const ids = sql.join(branchIds.map((id) => sql`${id}`), sql`, `);
   const today = todayRange(timezone).date;
   const [stockout, counts, receipts, cash, alerts] = await Promise.all([
-    listStockoutRisk({ businessId, branchIds, salesStart: localDateToUtc(dateBefore(today, 27), timezone), salesEnd: localDateToUtc(today, timezone, true), windowDays: 28 }),
+    listStockoutRisk({ businessId, branchIds, salesStart: localDateToUtc(dateBefore(today, 27), timezone).toISOString(), salesEnd: localDateToUtc(today, timezone, true).toISOString(), windowDays: 28 }),
     db.execute<{ total: number }>(sql`select count(*)::int total from inventory_counts where business_id=${businessId} and branch_id in (${ids}) and status in ('COUNTING','REVIEW')`),
     db.execute<{ total: number }>(sql`select count(*)::int total from purchase_orders where business_id=${businessId} and branch_id in (${ids}) and status in ('ORDERED','PARTIALLY_RECEIVED')`),
     db.execute<{ variance: string }>(sql`select coalesce(sum(abs(cash_difference)) filter(where status='CLOSED'),0)::text variance from pos_sessions where business_id=${businessId} and branch_id in (${ids}) and closed_at between ${periodStart} and ${periodEnd}`),

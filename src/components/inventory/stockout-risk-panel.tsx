@@ -14,8 +14,8 @@ export async function StockoutRiskPanel({ businessId, branchIds, timezone }: { b
   const records = await listStockoutRisk({
     businessId,
     branchIds,
-    salesStart: localDateToUtc(dateBefore(today, 27), timezone),
-    salesEnd: localDateToUtc(today, timezone, true),
+    salesStart: localDateToUtc(dateBefore(today, 27), timezone).toISOString(),
+    salesEnd: localDateToUtc(today, timezone, true).toISOString(),
     windowDays: 28,
   });
   const attention = records.filter((record) => ["CRITICAL", "HIGH", "MEDIUM"].includes(record.risk)).sort((a, b) => {

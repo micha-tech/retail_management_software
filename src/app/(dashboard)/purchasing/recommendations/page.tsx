@@ -20,8 +20,8 @@ export default async function ProcurementRecommendationsPage() {
   const risks = await listStockoutRisk({
     businessId: access.business.id,
     branchIds: branches.map((branch) => branch.id),
-    salesStart: localDateToUtc(dateBefore(today, 27), access.business.timezone),
-    salesEnd: localDateToUtc(today, access.business.timezone, true),
+    salesStart: localDateToUtc(dateBefore(today, 27), access.business.timezone).toISOString(),
+    salesEnd: localDateToUtc(today, access.business.timezone, true).toISOString(),
     windowDays: 28,
   });
   const recommendations = risks.filter((risk) => ["CRITICAL", "HIGH", "MEDIUM"].includes(risk.risk)).map((risk) => ({ ...risk, ...recommendPurchaseQuantity({ averageDailySales: risk.averageDailySales, onHand: risk.onHand, incomingQuantity: risk.incomingQuantity }) })).filter((recommendation) => recommendation.suggestedQuantity > 0).sort((a, b) => b.suggestedQuantity - a.suggestedQuantity || (a.daysOfCover ?? 0) - (b.daysOfCover ?? 0));
