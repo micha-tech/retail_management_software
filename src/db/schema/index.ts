@@ -98,7 +98,7 @@ export const businessMemberships = pgTable(
     primaryKey({ columns: [table.businessId, table.userId] }),
     index("memberships_user_active_idx").on(table.userId, table.active),
     index("memberships_business_role_idx").on(table.businessId, table.role),
-    check("memberships_permissions_valid_ck", sql`${table.permissions} IS NULL OR ${table.permissions} <@ ARRAY['business:manage','dashboard:read','branch:read','branch:manage','team:manage','product:manage','inventory:read','inventory:manage','pos:operate','sales:read','credit:manage','report:read','audit:read']::text[]`),
+    check("memberships_permissions_valid_ck", sql`${table.permissions} IS NULL OR ${table.permissions} <@ ARRAY['business:manage','dashboard:read','branch:read','branch:manage','team:manage','product:manage','inventory:read','inventory:manage','purchasing:read','purchasing:manage','pos:operate','sales:read','credit:manage','report:read','audit:read']::text[]`),
   ],
 );
 
@@ -247,6 +247,10 @@ export const creditEntryTypeEnum = pgEnum("credit_entry_type", ["SALE", "PAYMENT
 export const cashMovementTypeEnum = pgEnum("cash_movement_type", ["CASH_IN", "CASH_OUT"]);
 export const transferStatusEnum = pgEnum("stock_transfer_status", ["DRAFT", "IN_TRANSIT", "RECEIVED", "CANCELLED"]);
 export const inventoryCountStatusEnum = pgEnum("inventory_count_status", ["DRAFT", "COUNTING", "REVIEW", "POSTED", "CANCELLED"]);
+export const purchaseOrderStatusEnum = pgEnum("purchase_order_status", ["DRAFT", "ORDERED", "PARTIALLY_RECEIVED", "RECEIVED", "CANCELLED"]);
+export const operationalAlertTypeEnum = pgEnum("operational_alert_type", ["INVENTORY_VARIANCE"]);
+export const operationalAlertSeverityEnum = pgEnum("operational_alert_severity", ["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+export const operationalAlertStatusEnum = pgEnum("operational_alert_status", ["OPEN", "ACKNOWLEDGED", "IN_REVIEW", "RESOLVED", "DISMISSED"]);
 
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -368,9 +372,58 @@ export const stockMovements = pgTable("stock_movements", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"stock_movements_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.productId],foreignColumns:[products.businessId,products.id],name:"stock_movements_tenant_product_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.performedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"stock_movements_membership_fk"}).onDelete("restrict"),index("stock_movements_business_branch_created_idx").on(table.businessId, table.branchId, table.createdAt), index("stock_movements_product_created_idx").on(table.productId, table.createdAt), check("stock_movements_balance_ck", sql`${table.quantityAfter} = ${table.quantityBefore} + ${table.quantity} AND ${table.quantity} <> 0 AND ${table.quantityAfter} >= 0`)]);
 
+export const operationalAlerts = pgTable("operational_alerts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }),
+  type: operationalAlertTypeEnum("type").notNull(),
+  severity: operationalAlertSeverityEnum("severity").notNull(),
+  status: operationalAlertStatusEnum("status").notNull().default("OPEN"),
+  entityType: text("entity_type").notNull(),
+  entityId: uuid("entity_id").notNull(),
+  title: text("title").notNull(),
+  reason: text("reason").notNull(),
+  recommendation: text("recommendation").notNull(),
+  supportingData: jsonb("supporting_data").notNull().default({}),
+  createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  acknowledgedBy: uuid("acknowledged_by").references(() => users.id, { onDelete: "restrict" }),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "restrict" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  dismissedBy: uuid("dismissed_by").references(() => users.id, { onDelete: "restrict" }),
+  dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("operational_alerts_business_type_entity_uq").on(table.businessId, table.type, table.entityId),
+  foreignKey({ columns: [table.businessId, table.branchId], foreignColumns: [branches.businessId, branches.id], name: "operational_alerts_tenant_branch_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.createdBy], foreignColumns: [businessMemberships.businessId, businessMemberships.userId], name: "operational_alerts_creator_membership_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.acknowledgedBy], foreignColumns: [businessMemberships.businessId, businessMemberships.userId], name: "operational_alerts_acknowledger_membership_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.resolvedBy], foreignColumns: [businessMemberships.businessId, businessMemberships.userId], name: "operational_alerts_resolver_membership_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.dismissedBy], foreignColumns: [businessMemberships.businessId, businessMemberships.userId], name: "operational_alerts_dismisser_membership_fk" }).onDelete("restrict"),
+  index("operational_alerts_business_status_created_idx").on(table.businessId, table.status, table.createdAt),
+]);
+
+export const suppliers = pgTable("suppliers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  name: text("name").notNull(), contactName: text("contact_name"), phone: text("phone"), email: text("email"), address: text("address"), taxId: text("tax_id"), paymentTermsDays: integer("payment_terms_days").notNull().default(0), leadTimeDays: integer("lead_time_days").notNull().default(0), notes: text("notes"), active: boolean("active").notNull().default(true), ...timestamps,
+}, (table) => [uniqueIndex("suppliers_business_name_uq").on(table.businessId,table.name),uniqueIndex("suppliers_business_id_uq").on(table.businessId,table.id),index("suppliers_business_active_idx").on(table.businessId,table.active),check("suppliers_terms_nonnegative_ck",sql`${table.paymentTermsDays} >= 0 AND ${table.leadTimeDays} >= 0`)]);
+
+export const purchaseOrders = pgTable("purchase_orders", {
+  id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id,{onDelete:"restrict"}), branchId: uuid("branch_id").notNull().references(() => branches.id,{onDelete:"restrict"}), supplierId: uuid("supplier_id").notNull().references(() => suppliers.id,{onDelete:"restrict"}), orderNumber: text("order_number").notNull(), supplierReference: text("supplier_reference"), status: purchaseOrderStatusEnum("status").notNull().default("DRAFT"), expectedAt: timestamp("expected_at",{withTimezone:true}), orderedAt: timestamp("ordered_at",{withTimezone:true}), completedAt: timestamp("completed_at",{withTimezone:true}), cancelledAt: timestamp("cancelled_at",{withTimezone:true}), notes: text("notes"), createdBy: uuid("created_by").notNull().references(() => users.id,{onDelete:"restrict"}), orderedBy: uuid("ordered_by").references(() => users.id,{onDelete:"restrict"}), ...timestamps,
+}, (table) => [uniqueIndex("purchase_orders_business_number_uq").on(table.businessId,table.orderNumber),uniqueIndex("purchase_orders_business_id_uq").on(table.businessId,table.id),uniqueIndex("purchase_orders_business_branch_id_uq").on(table.businessId,table.branchId,table.id),foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"purchase_orders_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.supplierId],foreignColumns:[suppliers.businessId,suppliers.id],name:"purchase_orders_tenant_supplier_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"purchase_orders_creator_membership_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.orderedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"purchase_orders_orderer_membership_fk"}).onDelete("restrict"),index("purchase_orders_business_status_created_idx").on(table.businessId,table.status,table.createdAt),index("purchase_orders_supplier_created_idx").on(table.supplierId,table.createdAt)]);
+
+export const purchaseOrderItems = pgTable("purchase_order_items", {
+  id: uuid("id").primaryKey().defaultRandom(), purchaseOrderId: uuid("purchase_order_id").notNull().references(() => purchaseOrders.id,{onDelete:"restrict"}), productId: uuid("product_id").notNull().references(() => products.id,{onDelete:"restrict"}), productNameSnapshot: text("product_name_snapshot").notNull(), skuSnapshot: text("sku_snapshot").notNull(), orderedQuantity: integer("ordered_quantity").notNull(), receivedQuantity: integer("received_quantity").notNull().default(0), unitCost: bigint("unit_cost",{mode:"bigint"}).notNull(),
+}, (table) => [uniqueIndex("purchase_order_items_order_product_uq").on(table.purchaseOrderId,table.productId),index("purchase_order_items_product_idx").on(table.productId),check("purchase_order_items_quantities_ck",sql`${table.orderedQuantity} > 0 AND ${table.receivedQuantity} >= 0 AND ${table.receivedQuantity} <= ${table.orderedQuantity} AND ${table.unitCost} >= 0`)]);
+
+export const purchaseOrderPayments = pgTable("purchase_order_payments", {
+  id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id,{onDelete:"restrict"}), purchaseOrderId: uuid("purchase_order_id").notNull(), amount: bigint("amount",{mode:"bigint"}).notNull(), paymentMethod: paymentMethodEnum("payment_method").notNull(), reference: text("reference"), notes: text("notes"), paidBy: uuid("paid_by").notNull().references(() => users.id,{onDelete:"restrict"}), paidAt: timestamp("paid_at",{withTimezone:true}).notNull().defaultNow(),
+}, (table) => [foreignKey({columns:[table.businessId,table.purchaseOrderId],foreignColumns:[purchaseOrders.businessId,purchaseOrders.id],name:"purchase_order_payments_tenant_order_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.paidBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"purchase_order_payments_membership_fk"}).onDelete("restrict"),index("purchase_order_payments_order_paid_idx").on(table.purchaseOrderId,table.paidAt),check("purchase_order_payments_amount_positive_ck",sql`${table.amount} > 0`)]);
+
 export const stockReceipts = pgTable("stock_receipts", {
-  id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), receiptNumber: text("receipt_number").notNull(), supplierReference: text("supplier_reference"), notes: text("notes"), receivedBy: uuid("received_by").notNull().references(() => users.id, { onDelete: "restrict" }), receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"stock_receipts_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.receivedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"stock_receipts_membership_fk"}).onDelete("restrict"),uniqueIndex("stock_receipts_business_number_uq").on(table.businessId, table.receiptNumber), index("stock_receipts_branch_received_idx").on(table.branchId, table.receivedAt)]);
+  id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }), purchaseOrderId: uuid("purchase_order_id").references(() => purchaseOrders.id,{onDelete:"restrict"}), receiptNumber: text("receipt_number").notNull(), supplierReference: text("supplier_reference"), notes: text("notes"), receivedBy: uuid("received_by").notNull().references(() => users.id, { onDelete: "restrict" }), receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"stock_receipts_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.purchaseOrderId],foreignColumns:[purchaseOrders.businessId,purchaseOrders.id],name:"stock_receipts_tenant_order_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.receivedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"stock_receipts_membership_fk"}).onDelete("restrict"),uniqueIndex("stock_receipts_business_number_uq").on(table.businessId, table.receiptNumber), index("stock_receipts_branch_received_idx").on(table.branchId, table.receivedAt),index("stock_receipts_purchase_order_idx").on(table.purchaseOrderId)]);
 
 export const stockReceiptItems = pgTable("stock_receipt_items", {
   id: uuid("id").primaryKey().defaultRandom(), receiptId: uuid("receipt_id").notNull().references(() => stockReceipts.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), quantity: integer("quantity").notNull(), unitCost: bigint("unit_cost", { mode: "bigint" }).notNull().default(sql`0`),

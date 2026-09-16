@@ -7,6 +7,8 @@ export const permissionDefinitions = [
   { value: "credit:manage", label: "Credit management", description: "Sell on credit, manage credit customers, and record repayments." },
   { value: "inventory:read", label: "Inventory view", description: "View stock balances, movements, counts, and exports." },
   { value: "inventory:manage", label: "Inventory operations", description: "Receive, adjust, transfer, import, and count stock." },
+  { value: "purchasing:read", label: "Purchasing view", description: "View suppliers, purchase orders, deliveries, and supplier balances." },
+  { value: "purchasing:manage", label: "Purchasing operations", description: "Create suppliers and orders, receive deliveries, and record supplier payments." },
   { value: "product:manage", label: "Products", description: "Create and edit products, pricing, and categories." },
   { value: "report:read", label: "Reports", description: "View and export operational reports." },
   { value: "branch:read", label: "Branches", description: "View branch details and assigned locations." },
@@ -23,9 +25,9 @@ const all = new Set<Permission>(permissions);
 const rolePermissions: Record<BusinessRole, ReadonlySet<Permission>> = {
   OWNER: all,
   ADMIN: all,
-  BRANCH_MANAGER: new Set(["dashboard:read", "branch:read", "inventory:read", "inventory:manage", "pos:operate", "sales:read", "report:read"]),
+  BRANCH_MANAGER: new Set(["dashboard:read", "branch:read", "inventory:read", "inventory:manage", "purchasing:read", "purchasing:manage", "pos:operate", "sales:read", "report:read"]),
   CASHIER: new Set(["pos:operate"]),
-  STOREKEEPER: new Set(["inventory:read", "inventory:manage"]),
+  STOREKEEPER: new Set(["inventory:read", "inventory:manage", "purchasing:read"]),
 };
 
 export function defaultPermissionsForRole(role: BusinessRole) {
@@ -49,6 +51,7 @@ const landingPages: { permission: Permission; href: string }[] = [
   { permission: "credit:manage", href: "/credit" },
   { permission: "inventory:read", href: "/inventory" },
   { permission: "inventory:manage", href: "/transfers" },
+  { permission: "purchasing:read", href: "/purchasing" },
   { permission: "product:manage", href: "/products" },
   { permission: "report:read", href: "/reports" },
   { permission: "branch:read", href: "/branches" },

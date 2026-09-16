@@ -2,12 +2,14 @@
 
 import {
   ArrowLeftRight,
+  BellRing,
   BarChart3,
   Boxes,
   Building2,
   Crown,
   LayoutDashboard,
   Package,
+  ShoppingBasket,
   ReceiptText,
   HandCoins,
   Settings,
@@ -32,6 +34,8 @@ const navigation: {
   { href: "/sales", label: "Sales", icon: ReceiptText, permission: "sales:read" },
   { href: "/credit", label: "Credit", icon: HandCoins, permission: "credit:manage" },
   { href: "/inventory", label: "Inventory", icon: Boxes, permission: "inventory:read" },
+  { href: "/alerts", label: "Alerts", icon: BellRing, permission: "inventory:read" },
+  { href: "/purchasing", label: "Purchasing", icon: ShoppingBasket, permission: "purchasing:read" },
   { href: "/transfers", label: "Transfers", icon: ArrowLeftRight, permission: "inventory:manage" },
   { href: "/products", label: "Products", icon: Package, permission: "product:manage" },
   { href: "/reports", label: "Reports", icon: BarChart3, permission: "report:read" },
