@@ -47,12 +47,9 @@
 .app-shell .payment-list > div { padding-block: 16px; }
 .app-shell .demo-safe-banner { background: #e7f2eb; border-bottom: 1px solid #cbded1; color: #234f3c; font-size: 12px; }
 .app-shell .demo-safe-banner button { min-height: 36px; border-color: #b6cdbf; background: #fff; }
-.app-shell .demo-pos { grid-template-columns: minmax(0, 1fr) minmax(270px, 340px); }
-.app-shell .demo-products button { border-radius: 12px; min-height: 140px; box-shadow: 0 1px 3px #173d290a; }
-.app-shell .demo-products button:hover { background: #f3faf5; border-color: #78a68c; }
-.app-shell .demo-products button b { font-size: 18px; }
-.app-shell .demo-cart { gap: 18px; }
-.app-shell .demo-cart footer { border-top: 1px solid var(--line); padding-top: 20px; }
+.app-shell.demo-app .pos-layout { height: auto; min-height: calc(100vh - 230px); border: 1px solid var(--line); border-radius: 14px; }
+.app-shell.demo-app .pos-layout .product-pane { overflow: auto; }
+.app-shell.demo-app .pos-layout .cart-pane { border-left-color: var(--line); }
 .marketing-site { --m-bg: #f7f8f3; --m-ink: #19392c; --m-muted: #586e60; --m-green: #167153; --m-deep: #10553f; --m-line: #dce5da; }
 .marketing-site .marketing-header { background: #f7f8f3f5; border-bottom: 1px solid #e1e8dd; }
 .marketing-site .marketing-nav-wrap { height: 80px; }
@@ -79,8 +76,7 @@
   .demo-app .brand strong { font-size: 10px; letter-spacing: 0; overflow-wrap: anywhere; }
 }
 @media (max-width: 1100px) {
-  .app-shell .demo-pos { grid-template-columns: 1fr; }
-  .app-shell .demo-cart { min-height: 250px; }
+  .app-shell.demo-app .pos-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 38vw); }
 }
 @media (max-width: 620px) {
   .app-shell .topbar { padding: 24px 18px; }

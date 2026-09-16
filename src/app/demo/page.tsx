@@ -11,14 +11,17 @@ import {
   FileDown,
   HandCoins,
   LayoutDashboard,
+  Minus,
   Package,
   Plus,
   ReceiptText,
   RotateCcw,
+  Search,
   Settings,
   ShieldCheck,
   ShoppingBasket,
   ShoppingCart,
+  Trash2,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -149,15 +152,22 @@ export default function DemoPage() {
   const [branch, setBranch] = useState(branches[0].id);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [sales, setSales] = useState(0);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
+  const [paymentMode, setPaymentMode] = useState("CASH");
+  const [saleCompleted, setSaleCompleted] = useState(false);
   const current = branches.find((item) => item.id === branch)!;
   const total = useMemo(() => products.reduce((sum, product) => sum + product.price * (cart[product.id] || 0), 0), [cart]);
-  const units = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
-  const reset = () => { setTab("overview"); setBranch(branches[0].id); setCart({}); setSales(0); };
+  const reset = () => { setTab("overview"); setBranch(branches[0].id); setCart({}); setSales(0); setQuery(""); setCategory(""); setPaymentMode("CASH"); setSaleCompleted(false); };
   const page = pages[tab];
   const branchStock = (product: (typeof products)[number]) => {
     const base = (product.id.charCodeAt(product.id.length - 1) * 13) % 40;
     return Math.max((base + product.stock) % 60, 3);
   };
+  const add = (id: string) => setCart((state) => ({ ...state, [id]: Math.min(branchStock(products.find((p) => p.id === id)!), (state[id] || 0) + 1) }));
+  const setQuantity = (id: string, requested: number) => setCart((state) => ({ ...state, [id]: Math.min(branchStock(products.find((p) => p.id === id)!), Math.max(1, Math.trunc(requested) || 1)) }));
+  const remove = (id: string) => setCart((state) => { const next = { ...state }; delete next[id]; return next; });
+  const complete = () => { setSales((value) => value + total); setCart({}); setSaleCompleted(true); };
 
   return (
     <div className="app-shell demo-app">
@@ -175,7 +185,7 @@ export default function DemoPage() {
       <div className="workspace">
         <div className="demo-safe-banner">
           <strong>Demo mode</strong>
-          <span>All data mirrors the seeded Relay Market Group workspace. Changes stay in this browser and never reach Retail Logic’s database.</span>
+          <span>Explore the Relay Market Group workspace with representative data.</span>
           <button onClick={reset}><RotateCcw size={15} />Reset</button>
         </div>
 
@@ -190,7 +200,7 @@ export default function DemoPage() {
           </select>
         </header>
 
-        <main className="page demo-page-content">
+        <main className="page">
           {tab === "overview" && (
             <>
               <section className="metrics">
@@ -249,32 +259,66 @@ export default function DemoPage() {
             </>
           )}
 
-          {tab === "pos" && (
-            <section className="demo-pos">
-              <article className="surface">
-                <div className="section-heading"><div><p className="eyebrow">Catalogue</p><h2>Products</h2></div></div>
-                <div className="demo-products">
-                  {products.map((product) => (
-                    <button key={product.id} onClick={() => setCart((state) => ({ ...state, [product.id]: (state[product.id] || 0) + 1 }))}>
-                      <strong>{product.name}</strong>
-                      <small>{product.sku} · {branchStock(product)} in stock</small>
-                      <b>{money(product.price)}</b>
-                    </button>
-                  ))}
-                </div>
-              </article>
-              <aside className="surface demo-cart">
-                <h2>Current sale</h2>
-                {!units ? <p className="muted">Select a product to begin.</p> : products.filter((product) => cart[product.id]).map((product) => (
-                  <div key={product.id}><span>{product.name} × {cart[product.id]}</span><b>{money(product.price * cart[product.id])}</b></div>
-                ))}
-                <footer>
-                  <strong>Total <b>{money(total)}</b></strong>
-                  <button className="button primary" disabled={!units} onClick={() => { setSales((value) => value + total); setCart({}); }}>Complete sample sale</button>
-                </footer>
-              </aside>
-            </section>
-          )}
+          {tab === "pos" && (() => {
+            const categories = [...new Set(products.map((p) => p.category))].sort();
+            const filtered = products.filter((p) => (!category || p.category === category) && `${p.name} ${p.sku}`.toLowerCase().includes(query.toLowerCase())).slice(0, 60);
+            const lines = Object.entries(cart).map(([id, quantity]) => ({ product: products.find((p) => p.id === id)!, quantity }));
+            const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
+            return (
+              <div className="pos-layout">
+                <section className="product-pane">
+                  <div className="pos-search"><Search size={18} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search product or scan barcode" /></div>
+                  <div className="category-strip">
+                    <button className={!category ? "active" : ""} onClick={() => setCategory("")}>All</button>
+                    {categories.map((name) => <button className={category === name ? "active" : ""} key={name} onClick={() => setCategory(name)}>{name}</button>)}
+                  </div>
+                  <div className="product-grid">
+                    {filtered.map((product) => (
+                      <button key={product.id} onClick={() => add(product.id)}>
+                        <small>{product.sku}</small>
+                        <strong>{product.name}</strong>
+                        <span>{money(product.price)}</span>
+                        <em>{branchStock(product)} available</em>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <aside className="cart-pane">
+                  <div className="cart-title"><ShoppingCart size={18} /><h2>Current sale</h2><span>{lines.length}</span></div>
+                  <div className="cart-lines">
+                    {lines.map((line) => (
+                      <article key={line.product.id}>
+                        <div><strong>{line.product.name}</strong><small>{line.product.sku}</small></div>
+                        <div className="qty">
+                          <button aria-label={`Decrease ${line.product.name}`} onClick={() => setQuantity(line.product.id, line.quantity - 1)}><Minus /></button>
+                          <input aria-label={`Quantity for ${line.product.name}`} type="number" inputMode="numeric" min={1} max={branchStock(line.product)} value={line.quantity} onChange={(e) => setQuantity(line.product.id, Number(e.target.value))} />
+                          <button aria-label={`Increase ${line.product.name}`} onClick={() => add(line.product.id)}><Plus /></button>
+                        </div>
+                        <strong>{money(line.product.price * line.quantity)}</strong>
+                        <button className="icon-button" aria-label={`Remove ${line.product.name}`} onClick={() => remove(line.product.id)}><Trash2 /></button>
+                      </article>
+                    ))}
+                    {!lines.length && <div className="empty-cart">Scan or select a product to begin.</div>}
+                  </div>
+                  <div className="checkout">
+                    <div className="sale-calculation">
+                      <div><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+                      <div className="total-row"><span>Total</span><strong>{money(subtotal)}</strong></div>
+                    </div>
+                    <label>Payment option<select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} disabled={!lines.length}>
+                      <option value="CASH">Cash</option>
+                      <option value="BANK_TRANSFER">Bank transfer</option>
+                      <option value="CARD">Card / POS terminal</option>
+                      <option value="MOBILE_MONEY">Mobile money</option>
+                      <option value="OTHER">Other</option>
+                    </select></label>
+                    {saleCompleted && <div className="sale-success">Sale completed. Select a product to start the next sale.</div>}
+                    <button className="button primary pay-button" disabled={!lines.length} onClick={complete}>{`Pay ${money(subtotal)}`}</button>
+                  </div>
+                </aside>
+              </div>
+            );
+          })()}
 
           {tab === "sales" && (
             <section className="surface table-surface">
