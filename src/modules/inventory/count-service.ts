@@ -11,12 +11,16 @@ import { inventoryBranchLock } from "./count-guard";
 type CountEntry = { itemId: string; countedQuantity: number; notes?: string };
 type ImportedCountEntry = { sku: string; countedQuantity: number; notes?: string };
 
-export async function createInventoryCount(input: { businessId: string; branchId: string; userId: string; notes?: string }) {
+export async function createInventoryCount(input: { businessId: string; branchId: string; userId: string; notes?: string; correctsCountId?: string }) {
   const countNumber = `CNT-${Date.now()}-${randomUUID().slice(0,6).toUpperCase()}`;
   try {
     return await db.transaction(async (tx) => {
       await tx.execute(inventoryBranchLock(input.branchId));
-      const [count] = await tx.insert(inventoryCounts).values({ businessId: input.businessId, branchId: input.branchId, countNumber, notes: input.notes?.trim() || null, createdBy: input.userId }).returning();
+      if (input.correctsCountId) {
+        const [source] = await tx.select({ id: inventoryCounts.id, countNumber: inventoryCounts.countNumber }).from(inventoryCounts).where(and(eq(inventoryCounts.id, input.correctsCountId), eq(inventoryCounts.businessId, input.businessId), eq(inventoryCounts.branchId, input.branchId), eq(inventoryCounts.status, "POSTED"))).limit(1);
+        if (!source) throw new ApplicationError("Only a posted count can be corrected.", "INVALID_COUNT_SOURCE", 409);
+      }
+      const [count] = await tx.insert(inventoryCounts).values({ businessId: input.businessId, branchId: input.branchId, countNumber, correctsCountId: input.correctsCountId ?? null, notes: input.notes?.trim() || null, createdBy: input.userId }).returning();
       await tx.insert(auditLogs).values({ businessId: input.businessId, branchId: input.branchId, userId: input.userId, action: "inventory_count.created", entityType: "inventory_count", entityId: count.id, metadata: { countNumber } });
       return count;
     });
@@ -29,16 +33,23 @@ export async function createInventoryCount(input: { businessId: string; branchId
 export async function startInventoryCount(input: { businessId: string; branchId: string; countId: string; userId: string }) {
   return db.transaction(async (tx) => {
     await tx.execute(inventoryBranchLock(input.branchId));
-    const locked = await tx.execute<{ id:string; status:string; count_number:string }>(sql`select id,status,count_number from inventory_counts where id=${input.countId} and business_id=${input.businessId} and branch_id=${input.branchId} for update`);
+    const locked = await tx.execute<{ id:string; status:string; count_number:string; corrects_count_id:string|null }>(sql`select id,status,count_number,corrects_count_id from inventory_counts where id=${input.countId} and business_id=${input.businessId} and branch_id=${input.branchId} for update`);
     if (!locked[0] || locked[0].status !== "DRAFT") throw new ApplicationError("Only a draft count can be started.", "INVALID_COUNT_STATE", 409);
     const openSession = await tx.select({ id:posSessions.id }).from(posSessions).where(and(eq(posSessions.branchId,input.branchId),eq(posSessions.status,"OPEN"))).limit(1);
     if (openSession[0]) throw new ApplicationError("Close all POS sessions at this branch before starting the count.", "POS_SESSION_OPEN", 409);
+    const prefill = new Map<string, { counted: number; notes?: string }>();
+    if (locked[0].corrects_count_id) {
+      const sourceItems = await tx.select({ productId: inventoryCountItems.productId, counted: inventoryCountItems.countedQuantity, notes: inventoryCountItems.notes, postingQuantityBefore: inventoryCountItems.postingQuantityBefore }).from(inventoryCountItems).where(eq(inventoryCountItems.countId, locked[0].corrects_count_id));
+      for (const item of sourceItems) if (item.counted !== null && item.postingQuantityBefore !== null) prefill.set(item.productId, { counted: item.counted, notes: item.notes || undefined });
+      const [source] = await tx.select({ countNumber: inventoryCounts.countNumber }).from(inventoryCounts).where(eq(inventoryCounts.id, locked[0].corrects_count_id)).limit(1);
+      if (!prefill.size && source) throw new ApplicationError(`The source count ${source.countNumber} has no posted quantities to carry forward.`, "INVALID_COUNT_SOURCE", 409);
+    }
     const catalogue = await tx.select({ productId:products.id,productName:products.name,sku:products.sku,expected:branchInventory.quantityOnHand }).from(products).leftJoin(branchInventory,and(eq(branchInventory.productId,products.id),eq(branchInventory.branchId,input.branchId))).where(and(eq(products.businessId,input.businessId),eq(products.active,true),eq(products.trackInventory,true))).orderBy(asc(products.id)).limit(5_001);
     if (!catalogue.length) throw new ApplicationError("Add tracked products before starting an inventory count.", "EMPTY_COUNT");
     if (catalogue.length > 5_000) throw new ApplicationError("This count exceeds the 5,000-product safety limit. Split the catalogue before counting.", "COUNT_TOO_LARGE");
-    await tx.insert(inventoryCountItems).values(catalogue.map((product) => ({ businessId:input.businessId,branchId:input.branchId,countId:input.countId,productId:product.productId,productNameSnapshot:product.productName,skuSnapshot:product.sku,expectedQuantity:product.expected ?? 0 })));
+    await tx.insert(inventoryCountItems).values(catalogue.map((product) => { const carried = prefill.get(product.productId); return { businessId:input.businessId,branchId:input.branchId,countId:input.countId,productId:product.productId,productNameSnapshot:product.productName,skuSnapshot:product.sku,expectedQuantity:product.expected ?? 0,countedQuantity:carried?.counted ?? null,varianceQuantity:carried ? carried.counted - (product.expected ?? 0) : null,notes:carried?.notes ?? null }; }));
     const [count] = await tx.update(inventoryCounts).set({ status:"COUNTING",startedBy:input.userId,startedAt:new Date(),updatedAt:new Date() }).where(eq(inventoryCounts.id,input.countId)).returning();
-    await tx.insert(auditLogs).values({ businessId:input.businessId,branchId:input.branchId,userId:input.userId,action:"inventory_count.started",entityType:"inventory_count",entityId:input.countId,metadata:{countNumber:locked[0].count_number,itemCount:catalogue.length} });
+    await tx.insert(auditLogs).values({ businessId:input.businessId,branchId:input.branchId,userId:input.userId,action:"inventory_count.started",entityType:"inventory_count",entityId:input.countId,metadata:{countNumber:locked[0].count_number,itemCount:catalogue.length,carriedFrom:locked[0].corrects_count_id ?? undefined} });
     return count;
   });
 }
@@ -48,10 +59,15 @@ async function ensureCountingCount(tx: Parameters<Parameters<typeof db.transacti
   if (!locked[0] || locked[0].status !== "COUNTING") throw new ApplicationError("This inventory count is not accepting quantities.", "INVALID_COUNT_STATE", 409);
 }
 
+async function ensureEditableCount(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], input: { businessId:string;branchId:string;countId:string }) {
+  const locked = await tx.execute<{ id:string;status:string }>(sql`select id,status from inventory_counts where id=${input.countId} and business_id=${input.businessId} and branch_id=${input.branchId} for update`);
+  if (!locked[0] || !["COUNTING","REVIEW"].includes(locked[0].status)) throw new ApplicationError("This inventory count is not accepting quantities.", "INVALID_COUNT_STATE", 409);
+}
+
 export async function saveInventoryCountEntries(input: { businessId:string;branchId:string;countId:string;userId:string;entries:CountEntry[] }) {
   if (!input.entries.length || input.entries.length > 5_000 || new Set(input.entries.map((entry)=>entry.itemId)).size !== input.entries.length || input.entries.some((entry)=>!Number.isSafeInteger(entry.countedQuantity)||entry.countedQuantity<0||entry.countedQuantity>2_000_000_000||(entry.notes?.length??0)>500)) throw new ApplicationError("Count entries are invalid.", "INVALID_COUNT_ENTRIES");
   return db.transaction(async (tx) => {
-    await ensureCountingCount(tx,input);
+    await ensureEditableCount(tx,input);
     const records = await tx.select({id:inventoryCountItems.id,expected:inventoryCountItems.expectedQuantity}).from(inventoryCountItems).where(and(eq(inventoryCountItems.countId,input.countId),inArray(inventoryCountItems.id,input.entries.map((entry)=>entry.itemId))));
     if (records.length !== input.entries.length) throw new ApplicationError("One or more count rows are unavailable.", "INVALID_COUNT_ENTRIES");
     const expectedById = new Map(records.map((record)=>[record.id,record.expected]));
@@ -64,9 +80,9 @@ export async function saveInventoryCountEntries(input: { businessId:string;branc
 export async function importInventoryCountEntries(input: { businessId:string;branchId:string;countId:string;userId:string;entries:ImportedCountEntry[] }) {
   if (!input.entries.length || input.entries.length > 5_000 || new Set(input.entries.map((entry)=>entry.sku.toUpperCase())).size !== input.entries.length || input.entries.some((entry)=>!entry.sku||!Number.isSafeInteger(entry.countedQuantity)||entry.countedQuantity<0||entry.countedQuantity>2_000_000_000||(entry.notes?.length??0)>500)) throw new ApplicationError("Imported count rows are invalid or contain duplicate SKUs.", "INVALID_COUNT_IMPORT");
   return db.transaction(async (tx) => {
-    await ensureCountingCount(tx,input);
+    await ensureEditableCount(tx,input);
     const normalized = input.entries.map((entry)=>entry.sku.trim().toUpperCase());
-    const records = await tx.select({id:inventoryCountItems.id,sku:inventoryCountItems.skuSnapshot,expected:inventoryCountItems.expectedQuantity}).from(inventoryCountItems).where(and(eq(inventoryCountItems.countId,input.countId),inArray(inventoryCountItems.skuSnapshot,normalized)));
+    const records = await tx.select({id:inventoryCountItems.id,sku:inventoryCountItems.skuSnapshot,expected:inventoryCountItems.expectedQuantity}).from(inventoryCountItems).where(and(eq(inventoryCountItems.countId,input.countId),inArray(sql`upper(${inventoryCountItems.skuSnapshot})`,normalized)));
     const bySku = new Map(records.map((record)=>[record.sku.toUpperCase(),record]));
     const unknown = normalized.filter((sku)=>!bySku.has(sku));
     if (unknown.length) throw new ApplicationError(`Unknown SKU in count file: ${unknown.slice(0,5).join(", ")}.`, "UNKNOWN_COUNT_SKU");

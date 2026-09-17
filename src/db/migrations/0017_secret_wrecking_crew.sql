@@ -1,0 +1,2 @@
+ALTER TABLE "inventory_counts" ADD COLUMN "corrects_count_id" uuid;--> statement-breakpoint
+ALTER TABLE "inventory_counts" ADD CONSTRAINT "inventory_counts_corrected_count_fk" FOREIGN KEY ("business_id","branch_id","corrects_count_id") REFERENCES "public"."inventory_counts"("business_id","branch_id","id") ON DELETE set null ON UPDATE no action;
