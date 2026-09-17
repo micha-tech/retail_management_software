@@ -1,5 +1,23 @@
 # Website assets
 
+## Retail brand photography
+
+The September 2026 marketing redesign uses four user-supplied generated images.
+They are brand illustrations, not customer testimonials or screenshots of the shipped software.
+The POS hardware image is labelled as a checkout concept; it does not imply a hardware bundle.
+
+- `public/brand/marketing/store-cashier.webp`: supplied image dated September 16, 11:11:13 PM.
+- `public/brand/marketing/store-owner.webp`: supplied image dated September 16, 11:11:24 PM.
+- `public/brand/marketing/inventory-team.webp`: supplied image dated September 16, 11:19:40 PM.
+- `public/brand/marketing/pos-hardware.webp`: supplied image dated September 16, 11:22:24 PM.
+
+WebP copies retain the original dimensions and use quality 84 (about 500 KB combined).
+The homepage uses CSS cropping and shapes; no source-image content was altered.
+The layout reference is https://moniepoint.com/ng/business: dark hero, photo collage,
+overlapping industry panel, sticky product navigation, spacious product sections,
+onboarding content, and a dark closing CTA. Copy, colors, imagery, and product claims
+are customized for Retail Logic. No reference-site customer counts or testimonials are used.
+
 ## Product screenshots
 
 Captured on 2026-09-13 from the actual running Retail Logic application and the existing Relay Market Group development/demo workspace. These are unaltered viewport captures (878 × 868); the data was already present in the workspace. No UI, chart, metric, product, or branch was drawn or substituted for these screenshots.
