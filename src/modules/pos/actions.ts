@@ -43,7 +43,12 @@ export async function closeSessionAction(formData: FormData) {
   const sessionId = z.uuid().parse(formData.get("sessionId"));
   const access = await requireBranchAccess(branchId);
   if (!canOperatePos(access)) redirect("/overview");
-  await closePosSession({ businessId: access.business.id, branchId, cashierId: access.user.id, sessionId, actualCash: parseMoney(String(formData.get("actualCash"))) });
+  try {
+    await closePosSession({ businessId: access.business.id, branchId, cashierId: access.user.id, sessionId, actualCash: parseMoney(String(formData.get("actualCash"))) });
+  } catch (error) {
+    const message = error instanceof ApplicationError ? error.message : "The POS session could not be closed.";
+    redirect(`/pos?branch=${branchId}&error=${encodeURIComponent(message)}`);
+  }
   redirect(withToast(`/pos?branch=${branchId}&report=${sessionId}`, "POS session closed. Daily sales PDF ready."));
 }
 export async function cashMovementAction(formData: FormData) { const branchId=z.uuid().parse(formData.get("branchId")); const access=await requireBranchAccess(branchId);if(!canOperatePos(access))redirect("/overview"); try { await recordCashMovement({businessId:access.business.id,branchId,cashierId:access.user.id,sessionId:z.uuid().parse(formData.get("sessionId")),type:z.enum(["CASH_IN","CASH_OUT"]).parse(formData.get("type")),amount:parseMoney(String(formData.get("amount"))),reason:z.string().trim().min(3).max(300).parse(formData.get("reason"))}); } catch(error) { const message=error instanceof ApplicationError?error.message:"Cash movement failed."; redirect(`/pos?branch=${branchId}&error=${encodeURIComponent(message)}`); } redirect(withToast(`/pos?branch=${branchId}`, "Cash movement recorded.")); }
