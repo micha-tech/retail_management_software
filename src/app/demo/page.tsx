@@ -28,6 +28,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { seedProducts } from "@/db/seed/catalog";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 const products = seedProducts.map((product, index) => ({
   id: `p-${index}`,
@@ -172,7 +173,7 @@ export default function DemoPage() {
   return (
     <div className="app-shell demo-app">
       <aside>
-        <div className="brand demo-brand-lockup"><strong>RETAIL <em>LOGIC</em></strong><small>INTERACTIVE DEMO</small></div>
+        <div className="brand demo-brand-lockup"><BrandLogo /><span>INTERACTIVE DEMO</span></div>
         <div className="business-switch"><small>Workspace</small><strong>Relay Market Group</strong></div>
         <nav aria-label="Demo navigation">
           {nav.map(([id, label, Icon]) => (

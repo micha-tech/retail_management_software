@@ -95,10 +95,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   };
 
   const pdf = await buildClosingReportPdf(report);
+  const filename = closingReportFilename(report);
   return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${closingReportFilename(report)}"`,
+      "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      "Content-Length": String(pdf.byteLength),
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
     },
