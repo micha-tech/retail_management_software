@@ -21,7 +21,8 @@ export async function checkout(input: CheckoutInput) {
       await tx.execute(inventoryBranchLock(input.branchId));
       const activeCount=await tx.execute<{id:string;count_number:string}>(activeInventoryCount(input.branchId));
       if(activeCount[0])throw new ApplicationError(`Inventory count ${activeCount[0].count_number} is active. Checkout is paused for this branch.`,"INVENTORY_COUNT_ACTIVE",409);
-      const [session] = await tx.select().from(posSessions).where(and(eq(posSessions.id, input.sessionId), eq(posSessions.businessId, input.businessId), eq(posSessions.branchId, input.branchId), eq(posSessions.cashierId, input.cashierId), eq(posSessions.status, "OPEN"))).limit(1);
+      const sessionRows = await tx.execute<{ id: string }>(sql`select id from pos_sessions where id=${input.sessionId} and business_id=${input.businessId} and branch_id=${input.branchId} and cashier_id=${input.cashierId} and status='OPEN' for update`);
+      const session = sessionRows[0];
       if (!session) throw new ApplicationError("POS session is closed or unavailable.", "POS_SESSION_CLOSED", 409);
       const sortedItems = [...input.items].sort((a, b) => a.productId.localeCompare(b.productId));
       if (sortedItems.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 100_000)) throw new ApplicationError("Cart quantity is invalid.", "INVALID_CART");

@@ -11,9 +11,17 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const access = await requirePermission("pos:operate");
   const parsedId = z.uuid().safeParse((await params).id);
   if (!parsedId.success) return new Response("Closing report not found.", { status: 404 });
+
+  const [reportOwner] = await db.select({
+    businessId: posSessions.businessId,
+    branchId: posSessions.branchId,
+  }).from(posSessions).where(eq(posSessions.id, parsedId.data)).limit(1);
+  if (!reportOwner) return new Response("Closing report not found.", { status: 404 });
+
+  const access = await requirePermission("pos:operate", reportOwner.businessId);
+  await requireBranchAccess(reportOwner.branchId, reportOwner.businessId);
 
   const [session] = await db.select({
     id: posSessions.id,
@@ -37,7 +45,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .limit(1);
 
   if (!session) return new Response("Closing report not found.", { status: 404 });
-  await requireBranchAccess(session.branchId);
   if (session.status !== "CLOSED" || !session.closedAt || session.expectedCash === null || session.actualCash === null || session.cashDifference === null) {
     return new Response("Close and reconcile this POS session before downloading its report.", { status: 409 });
   }

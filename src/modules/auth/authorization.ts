@@ -39,8 +39,8 @@ export async function requirePermission(permission: Permission, businessId?: str
   return access;
 }
 
-export async function requireBranchAccess(branchId: string) {
-  const access = await requireBusinessAccess();
+export async function requireBranchAccess(branchId: string, businessId?: string) {
+  const access = await requireBusinessAccess(businessId);
   const [branch] = await db.select().from(branches).where(and(eq(branches.id, branchId), eq(branches.businessId, access.business.id), eq(branches.active, true))).limit(1);
   if (!branch) throw new AuthorizationError("You do not have access to this branch.");
   if (access.role === "OWNER" || access.role === "ADMIN") return { ...access, branch };

@@ -22,19 +22,26 @@ function getDownloadFilename(contentDisposition: string | null) {
 export function ClosingReportDownload({ sessionId }: { sessionId: string }) {
   const reportUrl = `/api/pos/sessions/${encodeURIComponent(sessionId)}/closing-report`;
   const [status, setStatus] = useState<"idle" | "downloading" | "downloaded" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const downloadReport = useCallback(async () => {
     setStatus("downloading");
+    setErrorMessage("");
 
     try {
       const response = await fetch(reportUrl, {
         cache: "no-store",
         credentials: "same-origin",
       });
-      if (!response.ok) throw new Error(`PDF request failed with status ${response.status}.`);
+      if (!response.ok) {
+        const serverMessage = (await response.text()).trim();
+        throw new Error(serverMessage || `PDF request failed with status ${response.status}.`);
+      }
 
       const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-      if (!contentType.includes("application/pdf")) throw new Error("The server did not return a PDF.");
+      if (!contentType.includes("application/pdf")) {
+        throw new Error("Your session expired or the report service returned an invalid file. Refresh the page and try again.");
+      }
 
       const blob = await response.blob();
       if (blob.size === 0) throw new Error("The generated PDF was empty.");
@@ -50,7 +57,8 @@ export function ClosingReportDownload({ sessionId }: { sessionId: string }) {
 
       window.sessionStorage.setItem(`pos-closing-report:${sessionId}`, "downloaded");
       setStatus("downloaded");
-    } catch {
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The report could not be downloaded.");
       setStatus("error");
     }
   }, [reportUrl, sessionId]);
@@ -71,7 +79,7 @@ export function ClosingReportDownload({ sessionId }: { sessionId: string }) {
           {status === "downloading"
             ? "Preparing your daily sales PDF…"
             : status === "error"
-              ? "The automatic download could not start. Use the button to try again."
+              ? errorMessage
               : "Your daily sales PDF is ready. Keep it for reconciliation and handover."}
         </p>
       </div>
