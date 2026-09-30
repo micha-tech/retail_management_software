@@ -6,7 +6,8 @@ import { parseMoney } from "@/lib/money";
 import { withToast } from "@/lib/toast";
 import { requireBranchAccess } from "@/modules/auth/authorization";
 import { hasPermission } from "@/modules/auth/permissions";
-import { checkout, closePosSession, openPosSession, recordCashMovement } from "./service";
+import { CashReconciliationError, checkout, closePosSession, openPosSession, recordCashMovement } from "./service";
+import { cashReconciliationMessage } from "./reconciliation";
 
 export type CheckoutState = { error?: string; sale?: { id: string; saleNumber: string; total: string; idempotencyKey: string } };
 const paymentMethods = ["CASH", "BANK_TRANSFER", "CARD", "MOBILE_MONEY", "OTHER"] as const;
@@ -46,7 +47,10 @@ export async function closeSessionAction(formData: FormData) {
   try {
     await closePosSession({ businessId: access.business.id, branchId, cashierId: access.user.id, sessionId, actualCash: parseMoney(String(formData.get("actualCash"))) });
   } catch (error) {
-    const message = error instanceof ApplicationError ? error.message : "The POS session could not be closed.";
+    const canSeeDifference = ["OWNER", "ADMIN", "BRANCH_MANAGER"].includes(access.role);
+    const message = error instanceof CashReconciliationError && canSeeDifference
+      ? cashReconciliationMessage(error.expectedCash, error.actualCash, access.business.currency, true)
+      : error instanceof ApplicationError ? error.message : "The POS session could not be closed.";
     redirect(`/pos?branch=${branchId}&error=${encodeURIComponent(message)}`);
   }
   redirect(withToast(`/pos?branch=${branchId}&report=${sessionId}`, "POS session closed. Daily sales PDF ready."));
