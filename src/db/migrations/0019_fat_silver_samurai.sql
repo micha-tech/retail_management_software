@@ -1,0 +1,1 @@
+ALTER TABLE "products" ALTER COLUMN "allow_fractional_quantity" SET DEFAULT true;

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApplicationError } from "@/lib/errors";
 import { parseMoney } from "@/lib/money";
+import { isValidQuantity } from "@/lib/quantity";
 import { withToast } from "@/lib/toast";
 import { requireBranchAccess } from "@/modules/auth/authorization";
 import { hasPermission } from "@/modules/auth/permissions";
@@ -18,7 +19,7 @@ export async function checkoutAction(_state: CheckoutState, formData: FormData):
     const access = await requireBranchAccess(branchId);
     if (!canOperatePos(access)) return { error: "You cannot operate POS." };
     const sessionId = z.uuid().parse(formData.get("sessionId"));
-    const rawItems = z.array(z.object({ productId: z.uuid(), quantity: z.number().int().positive() })).parse(JSON.parse(String(formData.get("items"))));
+    const rawItems = z.array(z.object({ productId: z.uuid(), quantity: z.number().positive().refine((value) => isValidQuantity(value)) })).parse(JSON.parse(String(formData.get("items"))));
     const paymentSchema = z.array(z.object({ method: z.enum(paymentMethods), amount: z.string(), reference: z.string().max(200).optional(), paymentBankId: z.uuid().nullable().optional() })).max(5);
     const rawPayments = paymentSchema.parse(JSON.parse(String(formData.get("payments") || "[]")));
     const payments = rawPayments.map((payment) => ({ ...payment, amount: parseMoney(payment.amount), paymentBankId: payment.method === "BANK_TRANSFER" ? payment.paymentBankId : null }));

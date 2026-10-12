@@ -1,3 +1,5 @@
+import { quantityToThousandths } from "./quantity";
+
 const currencySymbols: Record<string, string> = { NGN: "₦", USD: "$", GBP: "£", GHS: "GH₵", EUR: "€" };
 
 export function parseMoney(value: string): bigint {
@@ -16,8 +18,8 @@ export function formatMoney(minorUnits: bigint, currency = "NGN") {
 }
 
 export function calculateLineTotal(quantity: number, unitPrice: bigint, discount = 0n) {
-  if (!Number.isInteger(quantity) || quantity <= 0 || unitPrice < 0n || discount < 0n) throw new Error("Invalid line values.");
-  const total = BigInt(quantity) * unitPrice - discount;
+  if (unitPrice < 0n || discount < 0n) throw new Error("Invalid line values.");
+  const total = (unitPrice * quantityToThousandths(quantity) + 500n) / 1000n - discount;
   if (total < 0n) throw new Error("Discount cannot exceed the line value.");
   return total;
 }

@@ -6,6 +6,7 @@ import {
   index,
   inet,
   integer,
+  numeric,
   bigint,
   jsonb,
   pgEnum,
@@ -273,7 +274,8 @@ export const products = pgTable("products", {
   unit: text("unit").notNull().default("each"),
   active: boolean("active").notNull().default(true),
   trackInventory: boolean("track_inventory").notNull().default(true),
-  minimumStockLevel: integer("minimum_stock_level").notNull().default(0),
+  minimumStockLevel: numeric("minimum_stock_level", { precision: 14, scale: 3, mode: "number" }).notNull().default(0),
+  allowFractionalQuantity: boolean("allow_fractional_quantity").notNull().default(true),
   ...timestamps,
 }, (table) => [
   uniqueIndex("products_business_sku_uq").on(table.businessId, table.sku),
@@ -290,8 +292,8 @@ export const branchInventory = pgTable("branch_inventory", {
   businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
   branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }),
   productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
-  quantityOnHand: integer("quantity_on_hand").notNull().default(0),
-  reorderLevel: integer("reorder_level").notNull().default(0),
+  quantityOnHand: numeric("quantity_on_hand", { precision: 14, scale: 3, mode: "number" }).notNull().default(0),
+  reorderLevel: numeric("reorder_level", { precision: 14, scale: 3, mode: "number" }).notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("branch_inventory_branch_product_uq").on(table.branchId, table.productId),
@@ -340,11 +342,11 @@ export const inventoryCountItems = pgTable("inventory_count_items", {
   productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   productNameSnapshot: text("product_name_snapshot").notNull(),
   skuSnapshot: text("sku_snapshot").notNull(),
-  expectedQuantity: integer("expected_quantity").notNull(),
-  countedQuantity: integer("counted_quantity"),
-  varianceQuantity: integer("variance_quantity"),
-  postingQuantityBefore: integer("posting_quantity_before"),
-  postedAdjustment: integer("posted_adjustment"),
+  expectedQuantity: numeric("expected_quantity", { precision: 14, scale: 3, mode: "number" }).notNull(),
+  countedQuantity: numeric("counted_quantity", { precision: 14, scale: 3, mode: "number" }),
+  varianceQuantity: numeric("variance_quantity", { precision: 14, scale: 3, mode: "number" }),
+  postingQuantityBefore: numeric("posting_quantity_before", { precision: 14, scale: 3, mode: "number" }),
+  postedAdjustment: numeric("posted_adjustment", { precision: 14, scale: 3, mode: "number" }),
   notes: text("notes"),
   countedBy: uuid("counted_by").references(() => users.id, { onDelete: "restrict" }),
   countedAt: timestamp("counted_at", { withTimezone: true }),
@@ -364,9 +366,9 @@ export const stockMovements = pgTable("stock_movements", {
   branchId: uuid("branch_id").notNull().references(() => branches.id, { onDelete: "restrict" }),
   productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   movementType: stockMovementTypeEnum("movement_type").notNull(),
-  quantity: integer("quantity").notNull(),
-  quantityBefore: integer("quantity_before").notNull(),
-  quantityAfter: integer("quantity_after").notNull(),
+  quantity: numeric("quantity", { precision: 14, scale: 3, mode: "number" }).notNull(),
+  quantityBefore: numeric("quantity_before", { precision: 14, scale: 3, mode: "number" }).notNull(),
+  quantityAfter: numeric("quantity_after", { precision: 14, scale: 3, mode: "number" }).notNull(),
   referenceType: text("reference_type").notNull(),
   referenceId: uuid("reference_id").notNull(),
   reason: text("reason"),
@@ -416,7 +418,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
 }, (table) => [uniqueIndex("purchase_orders_business_number_uq").on(table.businessId,table.orderNumber),uniqueIndex("purchase_orders_business_id_uq").on(table.businessId,table.id),uniqueIndex("purchase_orders_business_branch_id_uq").on(table.businessId,table.branchId,table.id),foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"purchase_orders_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.supplierId],foreignColumns:[suppliers.businessId,suppliers.id],name:"purchase_orders_tenant_supplier_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"purchase_orders_creator_membership_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.orderedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"purchase_orders_orderer_membership_fk"}).onDelete("restrict"),index("purchase_orders_business_status_created_idx").on(table.businessId,table.status,table.createdAt),index("purchase_orders_supplier_created_idx").on(table.supplierId,table.createdAt)]);
 
 export const purchaseOrderItems = pgTable("purchase_order_items", {
-  id: uuid("id").primaryKey().defaultRandom(), purchaseOrderId: uuid("purchase_order_id").notNull().references(() => purchaseOrders.id,{onDelete:"restrict"}), productId: uuid("product_id").notNull().references(() => products.id,{onDelete:"restrict"}), productNameSnapshot: text("product_name_snapshot").notNull(), skuSnapshot: text("sku_snapshot").notNull(), orderedQuantity: integer("ordered_quantity").notNull(), receivedQuantity: integer("received_quantity").notNull().default(0), unitCost: bigint("unit_cost",{mode:"bigint"}).notNull(),
+  id: uuid("id").primaryKey().defaultRandom(), purchaseOrderId: uuid("purchase_order_id").notNull().references(() => purchaseOrders.id,{onDelete:"restrict"}), productId: uuid("product_id").notNull().references(() => products.id,{onDelete:"restrict"}), productNameSnapshot: text("product_name_snapshot").notNull(), skuSnapshot: text("sku_snapshot").notNull(), orderedQuantity: numeric("ordered_quantity", { precision: 14, scale: 3, mode: "number" }).notNull(), receivedQuantity: numeric("received_quantity", { precision: 14, scale: 3, mode: "number" }).notNull().default(0), unitCost: bigint("unit_cost",{mode:"bigint"}).notNull(),
 }, (table) => [uniqueIndex("purchase_order_items_order_product_uq").on(table.purchaseOrderId,table.productId),index("purchase_order_items_product_idx").on(table.productId),check("purchase_order_items_quantities_ck",sql`${table.orderedQuantity} > 0 AND ${table.receivedQuantity} >= 0 AND ${table.receivedQuantity} <= ${table.orderedQuantity} AND ${table.unitCost} >= 0`)]);
 
 export const purchaseOrderPayments = pgTable("purchase_order_payments", {
@@ -428,7 +430,7 @@ export const stockReceipts = pgTable("stock_receipts", {
 }, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"stock_receipts_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.purchaseOrderId],foreignColumns:[purchaseOrders.businessId,purchaseOrders.id],name:"stock_receipts_tenant_order_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.receivedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"stock_receipts_membership_fk"}).onDelete("restrict"),uniqueIndex("stock_receipts_business_number_uq").on(table.businessId, table.receiptNumber), index("stock_receipts_branch_received_idx").on(table.branchId, table.receivedAt),index("stock_receipts_purchase_order_idx").on(table.purchaseOrderId)]);
 
 export const stockReceiptItems = pgTable("stock_receipt_items", {
-  id: uuid("id").primaryKey().defaultRandom(), receiptId: uuid("receipt_id").notNull().references(() => stockReceipts.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), quantity: integer("quantity").notNull(), unitCost: bigint("unit_cost", { mode: "bigint" }).notNull().default(sql`0`),
+  id: uuid("id").primaryKey().defaultRandom(), receiptId: uuid("receipt_id").notNull().references(() => stockReceipts.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), quantity: numeric("quantity", { precision: 14, scale: 3, mode: "number" }).notNull(), unitCost: bigint("unit_cost", { mode: "bigint" }).notNull().default(sql`0`),
 }, (table) => [uniqueIndex("stock_receipt_items_receipt_product_uq").on(table.receiptId, table.productId), check("stock_receipt_items_values_ck", sql`${table.quantity} > 0 AND ${table.unitCost} >= 0`)]);
 
 export const posSessions = pgTable("pos_sessions", {
@@ -444,8 +446,8 @@ export const sales = pgTable("sales", {
 }, (table) => [uniqueIndex("sales_business_number_uq").on(table.businessId, table.saleNumber), uniqueIndex("sales_business_idempotency_uq").on(table.businessId, table.idempotencyKey),uniqueIndex("sales_business_branch_id_uq").on(table.businessId,table.branchId,table.id),foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"sales_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.posSessionId],foreignColumns:[posSessions.businessId,posSessions.branchId,posSessions.id],name:"sales_tenant_session_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.cashierId],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"sales_membership_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.creditCustomerId],foreignColumns:[creditCustomers.businessId,creditCustomers.id],name:"sales_tenant_credit_customer_fk"}).onDelete("restrict"), index("sales_business_branch_created_idx").on(table.businessId, table.branchId, table.createdAt), index("sales_cashier_created_idx").on(table.cashierId, table.createdAt), check("sales_totals_ck", sql`${table.subtotal} >= 0 AND ${table.discountTotal} >= 0 AND ${table.taxTotal} >= 0 AND ${table.total} = ${table.subtotal} - ${table.discountTotal} + ${table.taxTotal} AND ${table.total} >= 0`)]);
 
 export const saleItems = pgTable("sale_items", {
-  id: uuid("id").primaryKey().defaultRandom(), saleId: uuid("sale_id").notNull().references(() => sales.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), productNameSnapshot: text("product_name_snapshot").notNull(), skuSnapshot: text("sku_snapshot").notNull(), quantity: integer("quantity").notNull(), unitPrice: bigint("unit_price", { mode: "bigint" }).notNull(), costPriceSnapshot: bigint("cost_price_snapshot", { mode: "bigint" }).notNull(), discount: bigint("discount", { mode: "bigint" }).notNull().default(sql`0`), lineTotal: bigint("line_total", { mode: "bigint" }).notNull(),
-}, (table) => [index("sale_items_sale_idx").on(table.saleId), index("sale_items_product_idx").on(table.productId), check("sale_items_values_ck", sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0 AND ${table.costPriceSnapshot} >= 0 AND ${table.discount} >= 0 AND ${table.lineTotal} = ${table.quantity} * ${table.unitPrice} - ${table.discount} AND ${table.lineTotal} >= 0`)]);
+  id: uuid("id").primaryKey().defaultRandom(), saleId: uuid("sale_id").notNull().references(() => sales.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), productNameSnapshot: text("product_name_snapshot").notNull(), skuSnapshot: text("sku_snapshot").notNull(), quantity: numeric("quantity", { precision: 14, scale: 3, mode: "number" }).notNull(), unitPrice: bigint("unit_price", { mode: "bigint" }).notNull(), costPriceSnapshot: bigint("cost_price_snapshot", { mode: "bigint" }).notNull(), discount: bigint("discount", { mode: "bigint" }).notNull().default(sql`0`), lineTotal: bigint("line_total", { mode: "bigint" }).notNull(),
+}, (table) => [index("sale_items_sale_idx").on(table.saleId), index("sale_items_product_idx").on(table.productId), check("sale_items_values_ck", sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0 AND ${table.costPriceSnapshot} >= 0 AND ${table.discount} >= 0 AND ${table.lineTotal} = round(${table.quantity} * ${table.unitPrice}) - ${table.discount} AND ${table.lineTotal} >= 0`)]);
 
 export const paymentBanks = pgTable("payment_banks", {
   id: uuid("id").primaryKey().defaultRandom(), businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }), bankName: text("bank_name").notNull(), branchName: text("branch_name").notNull(), accountName: text("account_name").notNull(), accountNumber: text("account_number").notNull(), active: boolean("active").notNull().default(true), ...timestamps,
@@ -503,7 +505,7 @@ export const stockTransfers = pgTable("stock_transfers", {
 }, (table) => [foreignKey({columns:[table.businessId,table.sourceBranchId],foreignColumns:[branches.businessId,branches.id],name:"stock_transfers_tenant_source_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.destinationBranchId],foreignColumns:[branches.businessId,branches.id],name:"stock_transfers_tenant_destination_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.initiatedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"stock_transfers_initiator_membership_fk"}).onDelete("restrict"),uniqueIndex("stock_transfers_business_number_uq").on(table.businessId, table.transferNumber), index("stock_transfers_business_status_created_idx").on(table.businessId, table.status, table.createdAt), check("stock_transfers_distinct_branches_ck", sql`${table.sourceBranchId} <> ${table.destinationBranchId}`)]);
 
 export const stockTransferItems = pgTable("stock_transfer_items", {
-  id: uuid("id").primaryKey().defaultRandom(), transferId: uuid("transfer_id").notNull().references(() => stockTransfers.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), quantity: integer("quantity").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(), transferId: uuid("transfer_id").notNull().references(() => stockTransfers.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }), quantity: numeric("quantity", { precision: 14, scale: 3, mode: "number" }).notNull(),
 }, (table) => [uniqueIndex("stock_transfer_items_transfer_product_uq").on(table.transferId, table.productId), check("stock_transfer_items_quantity_positive_ck", sql`${table.quantity} > 0`)]);
 
 export const saleReversals = pgTable("sale_reversals", {

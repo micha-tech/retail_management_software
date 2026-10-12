@@ -7,6 +7,7 @@ import { ApplicationError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { activeInventoryCount, inventoryBranchLock } from "@/modules/inventory/count-guard";
 import { calculateLineTotal, calculateSaleTotal } from "@/lib/money";
+import { isValidQuantity, normalizeQuantity } from "@/lib/quantity";
 import { calculateExpectedTillCash } from "./reconciliation";
 
 export type CheckoutInput = { businessId: string; branchId: string; cashierId: string; sessionId: string; idempotencyKey: string; discountTotal?: bigint; items: { productId: string; quantity: number }[]; payments: { method: PaymentMethod; amount: bigint; reference?: string; paymentBankId?: string | null }[]; credit?: { customerId: string; amount: bigint; dueDate?: Date | null; notes?: string } };
@@ -34,11 +35,11 @@ export async function checkout(input: CheckoutInput) {
       const session = sessionRows[0];
       if (!session) throw new ApplicationError("POS session is closed or unavailable.", "POS_SESSION_CLOSED", 409);
       const sortedItems = [...input.items].sort((a, b) => a.productId.localeCompare(b.productId));
-      if (sortedItems.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 100_000)) throw new ApplicationError("Cart quantity is invalid.", "INVALID_CART");
+      if (sortedItems.some((item) => !isValidQuantity(item.quantity))) throw new ApplicationError("Cart quantity is invalid. Use up to three decimal places.", "INVALID_CART");
       const catalogue = await tx.select().from(products).where(and(eq(products.businessId, input.businessId), eq(products.active, true), inArray(products.id, sortedItems.map((i) => i.productId))));
       if (catalogue.length !== sortedItems.length) throw new ApplicationError("A product is no longer active.", "PRODUCT_UNAVAILABLE", 409);
       const byId = new Map(catalogue.map((p) => [p.id, p]));
-      const calculated = sortedItems.map((item) => { const product = byId.get(item.productId)!; return { product, quantity: item.quantity, lineTotal: calculateLineTotal(item.quantity, product.sellingPrice) }; });
+      const calculated = sortedItems.map((item) => { const product = byId.get(item.productId)!; if (!product.allowFractionalQuantity && !Number.isInteger(item.quantity)) throw new ApplicationError(`${product.name} is sold in whole units only.`, "FRACTIONAL_QUANTITY_NOT_ALLOWED"); const quantity = normalizeQuantity(item.quantity); return { product, quantity, lineTotal: calculateLineTotal(quantity, product.sellingPrice) }; });
       const subtotal = calculated.reduce((total, line) => total + line.lineTotal, 0n); const discountTotal = input.discountTotal ?? 0n; let total: bigint; try { total = calculateSaleTotal(subtotal, discountTotal); } catch { throw new ApplicationError("Discount cannot exceed the sale subtotal.", "INVALID_DISCOUNT"); }
       const creditAmount = input.credit?.amount ?? 0n;
       if (input.payments.some((p) => p.amount <= 0n) || creditAmount < 0n || input.payments.reduce((amount, p) => amount + p.amount, creditAmount) !== total) throw new ApplicationError("Payments and credit must match the sale total.", "PAYMENT_MISMATCH");
@@ -55,7 +56,7 @@ export async function checkout(input: CheckoutInput) {
       const [sale] = await tx.insert(sales).values({ businessId: input.businessId, branchId: input.branchId, posSessionId: input.sessionId, cashierId: input.cashierId, creditCustomerId: creditCustomer?.id ?? null, saleNumber, subtotal, discountTotal, total, idempotencyKey: input.idempotencyKey }).returning();
       for (const line of calculated) {
         await tx.insert(saleItems).values({ saleId: sale.id, productId: line.product.id, productNameSnapshot: line.product.name, skuSnapshot: line.product.sku, quantity: line.quantity, unitPrice: line.product.sellingPrice, costPriceSnapshot: line.product.costPrice, lineTotal: line.lineTotal });
-        if (line.product.trackInventory) { const [balance] = await tx.update(branchInventory).set({ quantityOnHand: sql`${branchInventory.quantityOnHand} - ${line.quantity}`, updatedAt: new Date() }).where(and(eq(branchInventory.branchId, input.branchId), eq(branchInventory.productId, line.product.id))).returning({ after: branchInventory.quantityOnHand }); await tx.insert(stockMovements).values({ businessId: input.businessId, branchId: input.branchId, productId: line.product.id, movementType: "SALE", quantity: -line.quantity, quantityBefore: balance.after + line.quantity, quantityAfter: balance.after, referenceType: "sale", referenceId: sale.id, performedBy: input.cashierId }); }
+        if (line.product.trackInventory) { const [balance] = await tx.update(branchInventory).set({ quantityOnHand: sql`${branchInventory.quantityOnHand} - ${line.quantity}`, updatedAt: new Date() }).where(and(eq(branchInventory.branchId, input.branchId), eq(branchInventory.productId, line.product.id))).returning({ after: branchInventory.quantityOnHand }); await tx.insert(stockMovements).values({ businessId: input.businessId, branchId: input.branchId, productId: line.product.id, movementType: "SALE", quantity: -line.quantity, quantityBefore: normalizeQuantity(balance.after + line.quantity), quantityAfter: balance.after, referenceType: "sale", referenceId: sale.id, performedBy: input.cashierId }); }
       }
       if (input.payments.length) await tx.insert(payments).values(input.payments.map((payment) => ({ businessId: input.businessId, branchId: input.branchId, saleId: sale.id, posSessionId: input.sessionId, paymentMethod: payment.method, paymentBankId: payment.paymentBankId || null, amount: payment.amount, reference: payment.reference || null, receivedBy: input.cashierId })));
       if (input.credit) await tx.insert(creditEntries).values({ businessId: input.businessId, branchId: input.branchId, customerId: input.credit.customerId, saleId: sale.id, type: "SALE", amount: creditAmount, dueDate: input.credit.dueDate || null, notes: input.credit.notes?.trim() || null, recordedBy: input.cashierId });
