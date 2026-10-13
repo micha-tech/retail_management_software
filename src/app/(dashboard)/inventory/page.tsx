@@ -23,7 +23,7 @@ export default async function InventoryPage() {
       reorder: branchInventory.reorderLevel,
       minimum: products.minimumStockLevel,
       cost: products.costPrice,
-      value: sql<bigint>`${branchInventory.quantityOnHand} * ${products.costPrice}`,
+      value: sql<string>`round(${branchInventory.quantityOnHand} * ${products.costPrice})::text`,
     }).from(branchInventory)
       .innerJoin(branches, eq(branches.id, branchInventory.branchId))
       .innerJoin(products, eq(products.id, branchInventory.productId))
