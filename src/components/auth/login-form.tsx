@@ -6,10 +6,11 @@ import type { ActionState } from "@/modules/auth/schemas";
 
 const initialState: ActionState = {};
 
-export function LoginForm() {
+export function LoginForm({ intent = "logic" }: { intent?: "logic" | "pocketshop" }) {
   const [state, action, pending] = useActionState(loginAction, initialState);
   return (
     <form action={action} className="form-stack">
+      <input type="hidden" name="intent" value={intent} />
       <label>Email<input name="email" type="email" autoComplete="email" required /></label>
       {state.fieldErrors?.email && <p className="field-error">{state.fieldErrors.email[0]}</p>}
       <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>

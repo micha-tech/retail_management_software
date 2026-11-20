@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
-import { auditLogs, branches, branchAssignments, businessMemberships, businessSubscriptions, businesses, loginAttempts, users } from "@/db/schema";
+import { auditLogs, branches, branchAssignments, businessMemberships, businessSubscriptions, businesses, loginAttempts, psStores, users } from "@/db/schema";
 import { normalizeEmail, branchCode } from "@/lib/utils";
 import { databaseConstraint, databaseErrorCode, isDatabaseUnavailable } from "@/lib/database-errors";
 import { hashPassword, verifyPassword } from "@/modules/auth/password";
@@ -46,6 +46,12 @@ export async function loginAction(_state: ActionState, formData: FormData): Prom
   await createSession(user.id);
   if (user.mustChangePassword) redirect("/change-password");
   if (platformAdmin) redirect("/platform");
+  // Accounts that only own a PocketShop land in that product. Existing Logic
+  // workspaces keep their current destination unless a store also exists.
+  const [pocketStore] = membership
+    ? await db.select({ id: psStores.id }).from(psStores).where(and(eq(psStores.businessId, membership.businessId), eq(psStores.ownerUserId, user.id))).limit(1)
+    : [];
+  if (pocketStore && formData.get("intent") !== "logic") redirect("/pocketshop/dashboard");
   redirect(landingPageForAccess(membership!.role, membership!.permissions));
 }
 

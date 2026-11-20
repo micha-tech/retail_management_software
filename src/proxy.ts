@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const SESSION_COOKIE = "retail_session";
-const protectedPrefixes = ["/overview", "/branches", "/products", "/inventory", "/alerts", "/purchasing", "/pos", "/reports", "/sales", "/credit", "/transfers", "/team", "/audit", "/settings"];
+const protectedPrefixes = ["/overview", "/branches", "/products", "/inventory", "/alerts", "/purchasing", "/pos", "/reports", "/sales", "/credit", "/transfers", "/team", "/audit", "/settings", "/pocketshop/dashboard", "/pocketshop/products", "/pocketshop/inventory", "/pocketshop/orders", "/pocketshop/customers", "/pocketshop/store", "/pocketshop/payments", "/pocketshop/deliveries", "/pocketshop/settings", "/pocketshop/onboarding"];
 
 export function proxy(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);

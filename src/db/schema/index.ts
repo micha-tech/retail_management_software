@@ -513,3 +513,414 @@ export const saleReversals = pgTable("sale_reversals", {
 }, (table) => [foreignKey({columns:[table.businessId,table.branchId],foreignColumns:[branches.businessId,branches.id],name:"sale_reversals_tenant_branch_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.branchId,table.saleId],foreignColumns:[sales.businessId,sales.branchId,sales.id],name:"sale_reversals_tenant_sale_fk"}).onDelete("restrict"),foreignKey({columns:[table.businessId,table.reversedBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"sale_reversals_membership_fk"}).onDelete("restrict"),uniqueIndex("sale_reversals_sale_uq").on(table.saleId), index("sale_reversals_business_created_idx").on(table.businessId, table.createdAt)]);
 
 export type PaymentMethod = (typeof paymentMethodEnum.enumValues)[number];
+
+/* -------------------------------------------------------------------------- */
+/* Zyphr PocketShop                                                           */
+/* Additive tables only. Logic tables above are not altered. Every table is    */
+/* scoped by business_id and store_id so existing tenant checks remain valid.  */
+/* -------------------------------------------------------------------------- */
+
+export const psProductStatusEnum = pgEnum("ps_product_status", ["DRAFT", "ACTIVE", "ARCHIVED"]);
+export const psPaymentMethodEnum = pgEnum("ps_payment_method", ["CARD", "BANK_TRANSFER", "USSD", "CASH_ON_DELIVERY"]);
+export const psPaymentTimingEnum = pgEnum("ps_payment_timing", ["BEFORE_DELIVERY", "ON_DELIVERY", "PARTIAL"]);
+export const psPaymentStatusEnum = pgEnum("ps_payment_status", ["PENDING", "PAID", "FAILED", "REFUNDED"]);
+export const psFulfilmentStatusEnum = pgEnum("ps_fulfilment_status", ["PENDING_PAYMENT", "CONFIRMED", "PROCESSING", "READY_FOR_PICKUP", "DISPATCHED", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED", "FAILED_DELIVERY", "REFUNDED"]);
+export const psDeliveryMethodEnum = pgEnum("ps_delivery_method", ["DELIVERY", "PICKUP"]);
+export const psMovementTypeEnum = pgEnum("ps_movement_type", ["ADJUSTMENT_IN", "ADJUSTMENT_OUT", "RESERVE", "RELEASE", "FULFIL", "IMPORT", "REFUND"]);
+
+export const psStores = pgTable("ps_stores", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  ownerUserId: uuid("owner_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  bannerUrl: text("banner_url"),
+  category: text("category"),
+  phone: text("phone"),
+  email: text("email"),
+  whatsapp: text("whatsapp"),
+  address: text("address"),
+  state: text("state"),
+  city: text("city"),
+  country: text("country"),
+  currency: text("currency").notNull().default("NGN"),
+  timezone: text("timezone").notNull().default("Africa/Lagos"),
+  published: boolean("published").notNull().default(false),
+  onboardingStep: integer("onboarding_step").notNull().default(1),
+  openingHours: jsonb("opening_hours").notNull().default({}),
+  socialLinks: jsonb("social_links").notNull().default({}),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_stores_business_uq").on(table.businessId),
+  uniqueIndex("ps_stores_business_id_uq").on(table.businessId, table.id),
+  uniqueIndex("ps_stores_slug_uq").on(table.slug),
+  check("ps_stores_slug_ck", sql`${table.slug} ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' AND char_length(${table.slug}) <= 60`),
+  check("ps_stores_currency_ck", sql`char_length(${table.currency}) = 3 AND ${table.currency} = upper(${table.currency})`),
+]);
+
+export const psStoreSettings = pgTable("ps_store_settings", {
+  storeId: uuid("store_id").primaryKey().references(() => psStores.id, { onDelete: "cascade" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  paymentMethods: text("payment_methods").array().notNull().default(sql`ARRAY['CASH_ON_DELIVERY']::text[]`),
+  paymentTiming: psPaymentTimingEnum("payment_timing").notNull().default("ON_DELIVERY"),
+  depositPercent: integer("deposit_percent").notNull().default(0),
+  deliveryEnabled: boolean("delivery_enabled").notNull().default(true),
+  pickupEnabled: boolean("pickup_enabled").notNull().default(true),
+  codEnabled: boolean("cod_enabled").notNull().default(true),
+  notifyEmail: boolean("notify_email").notNull().default(true),
+  deliveryNote: text("delivery_note"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_settings_tenant_store_fk" }).onDelete("cascade"),
+  check("ps_settings_deposit_ck", sql`${table.depositPercent} >= 0 AND ${table.depositPercent} <= 100`),
+]);
+
+export const psAssets = pgTable("ps_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_assets_path_uq").on(table.filePath),
+  index("ps_assets_store_created_idx").on(table.storeId, table.createdAt),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_assets_tenant_store_fk" }).onDelete("restrict"),
+]);
+
+export const psCategories = pgTable("ps_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  active: boolean("active").notNull().default(true),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_categories_store_name_uq").on(table.storeId, table.name),
+  uniqueIndex("ps_categories_business_id_uq").on(table.businessId, table.id),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_categories_tenant_store_fk" }).onDelete("restrict"),
+]);
+
+export const psProducts = pgTable("ps_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  categoryId: uuid("category_id").references(() => psCategories.id, { onDelete: "set null" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  sku: text("sku").notNull(),
+  description: text("description"),
+  price: bigint("price", { mode: "bigint" }).notNull(),
+  compareAtPrice: bigint("compare_at_price", { mode: "bigint" }),
+  status: psProductStatusEnum("status").notNull().default("DRAFT"),
+  lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
+  weightGrams: integer("weight_grams"),
+  featured: boolean("featured").notNull().default(false),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_products_store_sku_uq").on(table.storeId, table.sku),
+  uniqueIndex("ps_products_store_slug_uq").on(table.storeId, table.slug),
+  uniqueIndex("ps_products_business_id_uq").on(table.businessId, table.id),
+  index("ps_products_store_status_idx").on(table.storeId, table.status),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_products_tenant_store_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.categoryId], foreignColumns: [psCategories.businessId, psCategories.id], name: "ps_products_tenant_category_fk" }).onDelete("set null"),
+  check("ps_products_slug_ck", sql`${table.slug} ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' AND char_length(${table.slug}) <= 80`),
+  check("ps_products_prices_ck", sql`${table.price} >= 0 AND (${table.compareAtPrice} IS NULL OR ${table.compareAtPrice} >= ${table.price})`),
+  check("ps_products_threshold_ck", sql`${table.lowStockThreshold} >= 0`),
+]);
+
+export const psProductImages = pgTable("ps_product_images", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => psProducts.id, { onDelete: "cascade" }),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  assetId: uuid("asset_id").notNull().references(() => psAssets.id, { onDelete: "restrict" }),
+  position: integer("position").notNull().default(0),
+  alt: text("alt"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_product_images_product_asset_uq").on(table.productId, table.assetId),
+  index("ps_product_images_product_position_idx").on(table.productId, table.position),
+]);
+
+export const psVariants = pgTable("ps_variants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => psProducts.id, { onDelete: "cascade" }),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  value: text("value").notNull(),
+  sku: text("sku").notNull(),
+  price: bigint("price", { mode: "bigint" }),
+  isDefault: boolean("is_default").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_variants_product_sku_uq").on(table.productId, table.sku),
+  index("ps_variants_product_idx").on(table.productId),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_variants_tenant_store_fk" }).onDelete("restrict"),
+  check("ps_variants_price_ck", sql`${table.price} IS NULL OR ${table.price} >= 0`),
+]);
+
+export const psInventory = pgTable("ps_inventory", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  productId: uuid("product_id").notNull().references(() => psProducts.id, { onDelete: "restrict" }),
+  variantId: uuid("variant_id").notNull().references(() => psVariants.id, { onDelete: "restrict" }),
+  quantityOnHand: integer("quantity_on_hand").notNull().default(0),
+  reserved: integer("reserved").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_inventory_variant_uq").on(table.variantId),
+  index("ps_inventory_store_idx").on(table.storeId),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_inventory_tenant_store_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.productId], foreignColumns: [psProducts.businessId, psProducts.id], name: "ps_inventory_tenant_product_fk" }).onDelete("restrict"),
+  check("ps_inventory_nonnegative_ck", sql`${table.quantityOnHand} >= 0 AND ${table.reserved} >= 0`),
+]);
+
+export const psInventoryMovements = pgTable("ps_inventory_movements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  productId: uuid("product_id").notNull().references(() => psProducts.id, { onDelete: "restrict" }),
+  variantId: uuid("variant_id").notNull().references(() => psVariants.id, { onDelete: "restrict" }),
+  quantity: integer("quantity").notNull(),
+  quantityBefore: integer("quantity_before").notNull(),
+  quantityAfter: integer("quantity_after").notNull(),
+  movementType: psMovementTypeEnum("movement_type").notNull(),
+  referenceType: text("reference_type").notNull(),
+  referenceId: uuid("reference_id"),
+  actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("ps_inventory_movements_variant_created_idx").on(table.variantId, table.createdAt),
+  index("ps_inventory_movements_store_created_idx").on(table.storeId, table.createdAt),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_movements_tenant_store_fk" }).onDelete("restrict"),
+  check("ps_inventory_movements_quantity_ck", sql`${table.quantity} <> 0 AND ${table.quantityAfter} = ${table.quantityBefore} + ${table.quantity} AND ${table.quantityAfter} >= 0`),
+]);
+
+export const psCarts = pgTable("ps_carts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("ps_carts_store_token_uq").on(table.storeId, table.token)]);
+
+export const psCartItems = pgTable("ps_cart_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cartId: uuid("cart_id").notNull().references(() => psCarts.id, { onDelete: "cascade" }),
+  variantId: uuid("variant_id").notNull().references(() => psVariants.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_cart_items_cart_variant_uq").on(table.cartId, table.variantId),
+  check("ps_cart_items_quantity_ck", sql`${table.quantity} > 0 AND ${table.quantity} <= 999`),
+]);
+
+export const psCustomers = pgTable("ps_customers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_customers_store_phone_uq").on(table.storeId, table.phone),
+  uniqueIndex("ps_customers_business_id_uq").on(table.businessId, table.id),
+  index("ps_customers_store_name_idx").on(table.storeId, table.name),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_customers_tenant_store_fk" }).onDelete("restrict"),
+]);
+
+export const psDeliveryZones = pgTable("ps_delivery_zones", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  fee: bigint("fee", { mode: "bigint" }).notNull().default(sql`0`),
+  estimatedDays: text("estimated_days"),
+  active: boolean("active").notNull().default(true),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_delivery_zones_store_name_uq").on(table.storeId, table.name),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_zones_tenant_store_fk" }).onDelete("restrict"),
+  check("ps_delivery_zones_fee_ck", sql`${table.fee} >= 0`),
+]);
+
+export const psOrders = pgTable("ps_orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  reference: text("reference").notNull(),
+  customerId: uuid("customer_id").references(() => psCustomers.id, { onDelete: "set null" }),
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone").notNull(),
+  customerEmail: text("customer_email"),
+  deliveryMethod: psDeliveryMethodEnum("delivery_method").notNull(),
+  deliveryZoneId: uuid("delivery_zone_id").references(() => psDeliveryZones.id, { onDelete: "set null" }),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  deliveryInstructions: text("delivery_instructions"),
+  subtotal: bigint("subtotal", { mode: "bigint" }).notNull(),
+  deliveryFee: bigint("delivery_fee", { mode: "bigint" }).notNull().default(sql`0`),
+  discount: bigint("discount", { mode: "bigint" }).notNull().default(sql`0`),
+  total: bigint("total", { mode: "bigint" }).notNull(),
+  depositAmount: bigint("deposit_amount", { mode: "bigint" }).notNull().default(sql`0`),
+  currency: text("currency").notNull(),
+  paymentMethod: psPaymentMethodEnum("payment_method").notNull(),
+  paymentTiming: psPaymentTimingEnum("payment_timing").notNull(),
+  paymentStatus: psPaymentStatusEnum("payment_status").notNull().default("PENDING"),
+  fulfilmentStatus: psFulfilmentStatusEnum("fulfilment_status").notNull().default("PENDING_PAYMENT"),
+  trackingRef: text("tracking_ref"),
+  internalNotes: text("internal_notes"),
+  accessTokenHash: text("access_token_hash").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  reservedUntil: timestamp("reserved_until", { withTimezone: true }).notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_orders_reference_uq").on(table.reference),
+  uniqueIndex("ps_orders_access_token_uq").on(table.accessTokenHash),
+  uniqueIndex("ps_orders_idempotency_uq").on(table.storeId, table.idempotencyKey),
+  index("ps_orders_store_created_idx").on(table.storeId, table.createdAt),
+  index("ps_orders_store_status_idx").on(table.storeId, table.fulfilmentStatus),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_orders_tenant_store_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.businessId, table.customerId], foreignColumns: [psCustomers.businessId, psCustomers.id], name: "ps_orders_tenant_customer_fk" }).onDelete("set null"),
+  check("ps_orders_totals_ck", sql`${table.subtotal} >= 0 AND ${table.deliveryFee} >= 0 AND ${table.discount} >= 0 AND ${table.total} = ${table.subtotal} + ${table.deliveryFee} - ${table.discount} AND ${table.total} >= 0`),
+]);
+
+export const psOrderItems = pgTable("ps_order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => psOrders.id, { onDelete: "restrict" }),
+  productId: uuid("product_id").notNull().references(() => psProducts.id, { onDelete: "restrict" }),
+  variantId: uuid("variant_id").notNull().references(() => psVariants.id, { onDelete: "restrict" }),
+  productName: text("product_name").notNull(),
+  variantName: text("variant_name").notNull(),
+  sku: text("sku").notNull(),
+  imageUrl: text("image_url"),
+  quantity: integer("quantity").notNull(),
+  unitPrice: bigint("unit_price", { mode: "bigint" }).notNull(),
+  lineTotal: bigint("line_total", { mode: "bigint" }).notNull(),
+}, (table) => [
+  index("ps_order_items_order_idx").on(table.orderId),
+  check("ps_order_items_values_ck", sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0 AND ${table.lineTotal} = ${table.quantity} * ${table.unitPrice}`),
+]);
+
+export const psOrderEvents = pgTable("ps_order_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => psOrders.id, { onDelete: "cascade" }),
+  status: text("status").notNull(),
+  message: text("message").notNull(),
+  actor: text("actor").notNull(),
+  actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("ps_order_events_order_created_idx").on(table.orderId, table.createdAt)]);
+
+export const psPayments = pgTable("ps_payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => psOrders.id, { onDelete: "restrict" }),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  provider: text("provider").notNull(),
+  method: psPaymentMethodEnum("method").notNull(),
+  providerReference: text("provider_reference"),
+  amount: bigint("amount", { mode: "bigint" }).notNull(),
+  currency: text("currency").notNull(),
+  status: psPaymentStatusEnum("status").notNull().default("PENDING"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_payments_provider_reference_uq").on(table.provider, table.providerReference).where(sql`${table.providerReference} IS NOT NULL`),
+  index("ps_payments_order_idx").on(table.orderId),
+  check("ps_payments_amount_ck", sql`${table.amount} >= 0`),
+]);
+
+export const psRateLimits = pgTable("ps_rate_limits", {
+  key: text("key").primaryKey(),
+  attempts: integer("attempts").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const psConnectedAccounts = pgTable("ps_connected_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  provider: text("provider").notNull(),
+  externalAccountId: text("external_account_id").notNull(),
+  status: text("status").notNull().default("PENDING"),
+  scopes: text("scopes").array(),
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_connected_accounts_store_provider_uq").on(table.storeId, table.provider, table.externalAccountId),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_connected_tenant_store_fk" }).onDelete("restrict"),
+]);
+
+/**
+ * Channel records are deliberately independent of credentials. Official OAuth
+ * tokens stay in a secret store; only a non-secret credential reference is kept
+ * here. A channel is never shown as connected until a provider callback has
+ * written an AUTHORIZED status through an official API adapter.
+ */
+export const psChannels = pgTable("ps_channels", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  provider: text("provider").notNull(),
+  displayName: text("display_name").notNull(),
+  externalId: text("external_id"),
+  authorizationStatus: text("authorization_status").notNull().default("NOT_CONNECTED"),
+  permissions: text("permissions").array().notNull().default(sql`ARRAY[]::text[]`),
+  credentialRef: text("credential_ref"),
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("ps_channels_store_provider_external_uq").on(table.storeId, table.provider, table.externalId),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_channels_tenant_store_fk" }).onDelete("restrict"),
+]);
+
+export const psConversations = pgTable("ps_conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "restrict" }),
+  channelId: uuid("channel_id").references(() => psChannels.id, { onDelete: "set null" }),
+  customerId: uuid("customer_id").references(() => psCustomers.id, { onDelete: "set null" }),
+  externalThreadId: text("external_thread_id"),
+  subject: text("subject"),
+  status: text("status").notNull().default("OPEN"),
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_conversations_channel_thread_uq").on(table.channelId, table.externalThreadId).where(sql`${table.externalThreadId} IS NOT NULL`),
+  index("ps_conversations_store_updated_idx").on(table.storeId, table.lastMessageAt),
+  foreignKey({ columns: [table.businessId, table.storeId], foreignColumns: [psStores.businessId, psStores.id], name: "ps_conversations_tenant_store_fk" }).onDelete("restrict"),
+]);
+
+export const psMessages = pgTable("ps_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => psConversations.id, { onDelete: "cascade" }),
+  storeId: uuid("store_id").notNull().references(() => psStores.id, { onDelete: "restrict" }),
+  direction: text("direction").notNull(),
+  body: text("body").notNull(),
+  externalMessageId: text("external_message_id"),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("ps_messages_external_uq").on(table.storeId, table.externalMessageId).where(sql`${table.externalMessageId} IS NOT NULL`),
+  index("ps_messages_conversation_sent_idx").on(table.conversationId, table.sentAt),
+  check("ps_messages_direction_ck", sql`${table.direction} IN ('INBOUND','OUTBOUND')`),
+]);

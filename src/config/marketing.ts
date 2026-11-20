@@ -12,6 +12,11 @@ export const siteConfig = {
 };
 
 export const navItems = [
+  { label: "Choose a product", href: "/choose", children: [
+    { label: "Which Zyphr fits your business?", href: "/choose" },
+    { label: "Zyphr Logic", href: "/features" },
+    { label: "Zyphr PocketShop", href: "/pocketshop" },
+  ] },
   { label: "Product", href: "/features", children: [
     { label: "Explore the platform", href: "/features" },
     { label: "Point of sale", href: "/features#point-of-sale" },
