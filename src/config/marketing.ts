@@ -2,13 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import { BarChart3, Boxes, Building2, CircleDollarSign, MonitorSmartphone, PackageSearch, ScanLine, ShieldCheck, UsersRound } from "lucide-react";
 
 export const siteConfig = {
-  name: "Retail Logic",
-  description: "Manage sales, inventory, customers, employees, suppliers, expenses, multiple branches, and e-commerce operations with Retail Logic.",
+  name: "Zyphr Logic",
+  description: "Manage sales, inventory, customers, employees, suppliers, expenses, multiple branches, and e-commerce operations with Zyphr Logic.",
   loginUrl: "/login",
   demoUrl: "/demo",
   contact: { email: "", phone: "", whatsapp: "" },
   socialLinks: [] as { label: string; href: string }[],
-  legalName: "Retail Logic",
+  legalName: "Zyphr Logic",
 };
 
 export const navItems = [
@@ -50,15 +50,15 @@ export const pricingTiers = [
 ];
 
 export const solutionPages = {
-  supermarkets: { eyebrow: "FOR SUPERMARKETS", title: "Keep every aisle, till, and stockroom in sync.", intro: "Retail Logic gives supermarket teams a connected view of fast-moving stock, checkout activity, employee access, purchasing, and daily margin.", challenges: ["Fast-moving inventory is difficult to reconcile", "Stockouts and excess stock reduce margin", "Cashier and shift accountability is fragmented"], benefits: ["Replenish using current branch-level stock", "Trace sales and stock movements", "Compare category and cashier performance"], workflow: ["Import products and opening stock", "Sell and receive stock throughout the day", "Review exceptions and performance from one dashboard"] },
+  supermarkets: { eyebrow: "FOR SUPERMARKETS", title: "Keep every aisle, till, and stockroom in sync.", intro: "Zyphr Logic gives supermarket teams a connected view of fast-moving stock, checkout activity, employee access, purchasing, and daily margin.", challenges: ["Fast-moving inventory is difficult to reconcile", "Stockouts and excess stock reduce margin", "Cashier and shift accountability is fragmented"], benefits: ["Replenish using current branch-level stock", "Trace sales and stock movements", "Compare category and cashier performance"], workflow: ["Import products and opening stock", "Sell and receive stock throughout the day", "Review exceptions and performance from one dashboard"] },
   "multi-branch-retail": { eyebrow: "FOR MULTI-BRANCH RETAIL", title: "Run every location from one source of truth.", intro: "Standardize how branches sell, count, transfer, and report while preserving clear access boundaries for each team.", challenges: ["Branches operate with inconsistent processes", "Consolidated reports arrive too late", "Transfers and stock ownership are hard to trace"], benefits: ["Compare branch performance in real time", "Move stock with a complete audit trail", "Apply clear branch-level access"], workflow: ["Configure branches, roles, and products", "Connect sales and inventory workflows", "Monitor every location from a consolidated view"] },
   ecommerce: { eyebrow: "FOR E-COMMERCE", title: "Connect your online catalogue to retail operations.", intro: "Prepare a branded online storefront while keeping products, prices, customers, orders, and fulfillment close to the operational system.", challenges: ["Online and in-store stock drift apart", "Order fulfillment lacks a single workflow", "Customer and product data live in separate tools"], benefits: ["Maintain a unified product catalogue", "Track online order status and fulfillment", "Keep customer history connected"], workflow: ["Publish products with images and descriptions", "Receive and prepare online orders", "Track fulfillment alongside inventory"] },
 } as const;
 
 export const commonFaqs = [
-  { question: "Can Retail Logic support more than one location?", answer: "Yes. Retail Logic is designed to provide centralized visibility while keeping branch inventory, employees, sales, and access clearly separated." },
+  { question: "Can Zyphr Logic support more than one location?", answer: "Yes. Zyphr Logic is designed to provide centralized visibility while keeping branch inventory, employees, sales, and access clearly separated." },
   { question: "Can employee access be limited?", answer: "Yes. Role-based permissions and branch assignments help ensure each employee sees and performs only the work assigned to them." },
-  { question: "Does Retail Logic include inventory and reporting?", answer: "Yes. The platform connects sales with inventory movements and operational reports, including branch, product, cashier, and stock views." },
+  { question: "Does Zyphr Logic include inventory and reporting?", answer: "Yes. The platform connects sales with inventory movements and operational reports, including branch, product, cashier, and stock views." },
   { question: "How do we know which plan fits?", answer: "Explore the demo to get familiar with the platform, then talk to our team about your locations, staff, workflows, and reporting needs. We will help you choose a suitable setup." },
 ];
 

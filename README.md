@@ -1,6 +1,6 @@
-# Retail Logic
+# Zyphr Logic
 
-Retail Logic is a production-oriented, multi-tenant and multi-branch retail operating system covering catalogue, stock, POS, sales, payments, transfers, reconciliation, reporting, and auditability.
+Zyphr Logic is a production-oriented, multi-tenant and multi-branch retail operating system covering catalogue, stock, POS, sales, payments, transfers, reconciliation, reporting, and auditability.
 
 ## Implementation status
 

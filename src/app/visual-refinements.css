@@ -1,13 +1,13 @@
 /* Shared visual language for the product, public website, and demo. */
 .app-shell, .marketing-site {
-  --ink: #182f2a;
+  --ink: #101828;
   --muted: #60736c;
   --line: #dfe7e2;
   --line-strong: #c6d4cc;
   --canvas: #f4f6f3;
-  --green: #167153;
-  --green-dark: #10553f;
-  --green-pale: #e8f3ec;
+  --green: #2563EB;
+  --green-dark: #1D4ED8;
+  --green-pale: #DBEAFE;
   -webkit-font-smoothing: antialiased;
 }
 .app-shell .workspace { background: var(--canvas); }
@@ -45,7 +45,7 @@
 .app-shell .attention-item.warning { background: #fffcf3; border-color: #e6dcbb; }
 .app-shell .attention-item small { color: #637068; line-height: 1.6; }
 .app-shell .payment-list > div { padding-block: 16px; }
-.app-shell .demo-safe-banner { background: #e7f2eb; border-bottom: 1px solid #cbded1; color: #234f3c; font-size: 12px; }
+.app-shell .demo-safe-banner { background: #DBEAFE; border-bottom: 1px solid #cbded1; color: #234f3c; font-size: 12px; }
 .app-shell .demo-safe-banner button { min-height: 36px; border-color: #b6cdbf; background: #fff; }
 .app-shell.demo-app aside > .demo-brand-lockup { display:flex; min-height:0; padding:10px 8px 4px; background:transparent; flex-direction:column; align-items:flex-start; gap:7px; }
 .app-shell.demo-app .demo-brand-lockup .brand-lockup { display:block; width:100%; height:auto; }
@@ -56,7 +56,7 @@
   .app-shell.demo-app .pos-layout .cart-pane { min-height: 0; border-left-color: var(--line); }
   .app-shell.demo-app .pos-layout .checkout { overflow: visible; }
 }
-.marketing-site { --m-bg: #f7f8f3; --m-ink: #19392c; --m-muted: #586e60; --m-green: #167153; --m-deep: #10553f; --m-line: #dce5da; }
+.marketing-site { --m-bg: #f7f8f3; --m-ink: #19392c; --m-muted: #586e60; --m-green: #2563EB; --m-deep: #1D4ED8; --m-line: #dce5da; }
 .marketing-site .marketing-header { background: #f7f8f3f5; border-bottom: 1px solid #e1e8dd; }
 .marketing-site .marketing-header .marketing-logo { filter: none; }
 .marketing-site .marketing-header .marketing-logo .brand-lockup,
@@ -79,8 +79,8 @@
 .marketing-site .contact-grid article, .marketing-site .solution-card-grid > a { border-radius: 16px; border-color: var(--m-line); box-shadow: 0 4px 18px #213d2505; }
 .marketing-site .marketing-pricing-grid { gap: 20px; }
 .marketing-site .marketing-pricing-grid article.featured { border-color: #528e64; box-shadow: 0 8px 26px #213d2510; }
-.marketing-site .marketing-final-cta { background: #153c2c; border-radius: 22px; }
-.marketing-site .marketing-footer { background: #102b22; }
+.marketing-site .marketing-final-cta { background: #172554; border-radius: 22px; }
+.marketing-site .marketing-footer { background: #172554; }
 .marketing-site .footer-group a { color: #ccdad0; line-height: 1.7; }
 .marketing-site .footer-bottom { color: #adc1b3; }
 .marketing-site :focus-visible { outline: 3px solid #418a65; outline-offset: 4px; }

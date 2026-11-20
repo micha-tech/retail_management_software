@@ -1,4 +1,4 @@
-# Retail Logic gap analysis
+# Zyphr Logic gap analysis
 
 Status reflects real repository functionality, not product claims.
 

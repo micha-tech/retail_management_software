@@ -4,7 +4,7 @@ import { buildClosingReportPdf, closingReportFilename, summarizeClosingReport, t
 
 function fixture(): ClosingReportData {
   return {
-    businessName: "Retail Logic Demo",
+    businessName: "Zyphr Logic Demo",
     branchName: "Ikeja",
     branchCode: "IKJ",
     cashierName: "Demo Cashier",

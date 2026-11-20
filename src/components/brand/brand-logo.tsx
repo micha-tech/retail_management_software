@@ -5,14 +5,14 @@ export function BrandLogo() {
     <>
       <Image
         className="brand-lockup"
-        src="/brand/retail-logic-lockup.png"
+        src="/brand/zyphr-logic-lockup.png"
         width={1552}
         height={279}
-        alt="Retail Logic"
+        alt="Zyphr Logic"
       />
       <Image
         className="brand-mark"
-        src="/brand/retail-logic-mark.png"
+        src="/brand/zyphr-logic-mark.png"
         width={371}
         height={292}
         alt=""

@@ -9,6 +9,6 @@ const schema=z.object({fullName:z.string().trim().min(2,"Enter your full name").
 export async function submitDemoRequest(_:DemoFormState,formData:FormData):Promise<DemoFormState>{
   const result=schema.safeParse(Object.fromEntries(formData));
   if(!result.success)return{status:"error",message:"Please review the highlighted fields.",errors:z.flattenError(result.error).fieldErrors};
-  try{const {website,consent,...data}=result.data;void website;await db.insert(demoRequests).values({...data,currentSoftware:data.currentSoftware||null,message:data.message||null,consent:consent==="on"});return{status:"success",message:"Thank you. Our team will review your business requirements and contact you to schedule your Retail Logic demonstration."};}
+  try{const {website,consent,...data}=result.data;void website;await db.insert(demoRequests).values({...data,currentSoftware:data.currentSoftware||null,message:data.message||null,consent:consent==="on"});return{status:"success",message:"Thank you. Our team will review your business requirements and contact you to schedule your Zyphr Logic demonstration."};}
   catch(error){logger.error("Demo request submission failed",{error});return{status:"error",message:"We could not send your request right now. Please try again shortly."};}
 }

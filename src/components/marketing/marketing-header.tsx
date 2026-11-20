@@ -42,7 +42,7 @@ export function MarketingHeader() {
     }
   }}>
     <div className="marketing-nav-wrap">
-      <Link className="marketing-logo brand" href="/" aria-label="Retail Logic home" onClick={() => { setOpen(false); setActiveMenu(null); }}><BrandLogo /></Link>
+      <Link className="marketing-logo brand" href="/" aria-label="Zyphr Logic home" onClick={() => { setOpen(false); setActiveMenu(null); }}><BrandLogo /></Link>
       <nav className="marketing-desktop-nav" aria-label="Main navigation">
         {navItems.map(item => item.children ? <div className={`marketing-nav-group ${activeMenu === item.label ? "is-open" : ""}`} key={item.label} onBlur={event => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setActiveMenu(null);

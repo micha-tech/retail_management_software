@@ -35,7 +35,7 @@ export type ClosingReportData = {
   cashMovements: ClosingReportCashMovement[];
 };
 
-const palette = { ink: "#17211B", muted: "#68736C", line: "#DCE4DF", soft: "#F2F6F3", green: "#176B49", evergreen: "#073F32", mint: "#DFF1E7", danger: "#A93636" };
+const palette = { ink: "#17211B", muted: "#68736C", line: "#DCE4DF", soft: "#F2F6F3", green: "#2563EB", evergreen: "#172554", mint: "#DFF1E7", danger: "#A93636" };
 const page = { left: 40, right: 555, bottom: 790 };
 
 function money(value: bigint, currency: string) {
@@ -76,7 +76,7 @@ function drawCart(doc: PDFKit.PDFDocument, x: number, y: number) {
 function drawFirstHeader(doc: PDFKit.PDFDocument, report: ClosingReportData) {
   doc.rect(0, 0, doc.page.width, 104).fill(palette.evergreen);
   drawCart(doc, 40, 25);
-  doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(17).text("Retail Logic", 96, 28);
+  doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(17).text("Zyphr Logic", 96, 28);
   doc.fillColor(palette.mint).font("Helvetica").fontSize(8).text("DAILY POS CLOSING REPORT", 96, 51, { characterSpacing: 1.1 });
   doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(14).text(report.businessName, 295, 26, { width: 260, align: "right", ellipsis: true, lineBreak: false });
   doc.fillColor(palette.mint).font("Helvetica").fontSize(9).text(`${report.branchName} (${report.branchCode})`, 295, 50, { width: 260, align: "right", ellipsis: true, lineBreak: false });
@@ -84,7 +84,7 @@ function drawFirstHeader(doc: PDFKit.PDFDocument, report: ClosingReportData) {
 }
 
 function drawContinuationHeader(doc: PDFKit.PDFDocument, report: ClosingReportData) {
-  doc.fillColor(palette.evergreen).font("Helvetica-Bold").fontSize(10).text("RETAIL LOGIC", page.left, 28);
+  doc.fillColor(palette.evergreen).font("Helvetica-Bold").fontSize(10).text("ZYPHR LOGIC", page.left, 28);
   doc.fillColor(palette.muted).font("Helvetica").fontSize(8).text(`${report.branchName} - Daily POS closing report`, 190, 29, { width: 365, align: "right" });
   doc.moveTo(page.left, 46).lineTo(page.right, 46).lineWidth(1).strokeColor(palette.line).stroke();
   doc.y = 62;
@@ -158,7 +158,7 @@ function saleRows(doc: PDFKit.PDFDocument, report: ClosingReportData) {
 
 export async function buildClosingReportPdf(report: ClosingReportData) {
   const summary = summarizeClosingReport(report);
-  const doc = new PDFDocument({ size: "A4", margins: { top: 40, right: 40, bottom: 20, left: 40 }, bufferPages: true, info: { Title: `POS closing report - ${report.branchName}`, Author: "Retail Logic", Subject: `Session ${report.sessionId}` } });
+  const doc = new PDFDocument({ size: "A4", margins: { top: 40, right: 40, bottom: 20, left: 40 }, bufferPages: true, info: { Title: `POS closing report - ${report.branchName}`, Author: "Zyphr Logic", Subject: `Session ${report.sessionId}` } });
   const chunks: Buffer[] = [];
   const complete = new Promise<Buffer>((resolve, reject) => {
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));

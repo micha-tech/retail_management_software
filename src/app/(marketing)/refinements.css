@@ -1,9 +1,9 @@
 /* Shared marketing presentation: clear hierarchy, generous controls, readable previews. */
-.marketing-site { --m-bg:#f6f8fb; --m-ink:#172b32; --m-muted:#53656e; --m-line:#dfe7ea; --m-green:#127553; --m-deep:#0d5940; --m-dark:#102b2b; font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+.marketing-site { --m-bg:#f6f8fb; --m-ink:#172b32; --m-muted:#53656e; --m-line:#dfe7ea; --m-green:#2563EB; --m-deep:#1D4ED8; --m-dark:#1E40AF; font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
 .marketing-site h1,.marketing-site h2,.marketing-site h3 { font-weight:650; text-wrap:balance; }
 .marketing-site p { text-wrap:pretty; }
 .marketing-container { width:min(1240px,calc(100% - 64px)); }
-.marketing-header { background:#102b2b; border-color:#24413d; }
+.marketing-header { background:#1E40AF; border-color:#24413d; }
 .marketing-nav-wrap { width:min(1320px,calc(100% - 48px)); height:80px; }
 .marketing-desktop-nav { flex-direction:row; }
 .marketing-desktop-nav a { font-size:14px; }

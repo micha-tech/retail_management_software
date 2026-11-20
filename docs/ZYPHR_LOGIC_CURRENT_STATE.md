@@ -1,4 +1,4 @@
-# Retail Logic current state
+# Zyphr Logic current state
 
 Audit date: 2026-09-16. This document describes the repository as it exists, including the staged purchasing module and migrations `0013` and `0014`. Those migrations must be applied to an environment before purchasing is used there.
 

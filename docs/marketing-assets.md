@@ -16,11 +16,11 @@ The homepage uses CSS cropping and shapes; no source-image content was altered.
 The layout reference is https://moniepoint.com/ng/business: dark hero, photo collage,
 overlapping industry panel, sticky product navigation, spacious product sections,
 onboarding content, and a dark closing CTA. Copy, colors, imagery, and product claims
-are customized for Retail Logic. No reference-site customer counts or testimonials are used.
+are customized for Zyphr Logic. No reference-site customer counts or testimonials are used.
 
 ## Product screenshots
 
-Captured on 2026-09-13 from the actual running Retail Logic application and the existing Relay Market Group development/demo workspace. These are unaltered viewport captures (878 × 868); the data was already present in the workspace. No UI, chart, metric, product, or branch was drawn or substituted for these screenshots.
+Captured on 2026-09-13 from the actual running Zyphr Logic application and the existing Relay Market Group development/demo workspace. These are unaltered viewport captures (878 × 868); the data was already present in the workspace. No UI, chart, metric, product, or branch was drawn or substituted for these screenshots.
 
 - `public/screenshots/overview.png`: `/overview?period=month`
 - `public/screenshots/inventory.png`: `/inventory`

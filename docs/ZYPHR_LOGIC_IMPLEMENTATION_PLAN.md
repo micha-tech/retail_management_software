@@ -1,8 +1,8 @@
-# Retail Logic implementation plan
+# Zyphr Logic implementation plan
 
 ## 1. Existing capability discovered
 
-Retail Logic already has a secure multi-tenant, multi-branch operational core: catalogue, branch inventory, immutable stock movements, stock counts, POS, payments, cash reconciliation, credit, transfers, operational reports, audit logs, and a staged supplier/purchase-order lifecycle. The current overview is a useful live management dashboard, but it is KPI/report-oriented rather than an explainable attention system.
+Zyphr Logic already has a secure multi-tenant, multi-branch operational core: catalogue, branch inventory, immutable stock movements, stock counts, POS, payments, cash reconciliation, credit, transfers, operational reports, audit logs, and a staged supplier/purchase-order lifecycle. The current overview is a useful live management dashboard, but it is KPI/report-oriented rather than an explainable attention system.
 
 ## 2. Missing capability selected first
 
