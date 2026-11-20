@@ -330,6 +330,46 @@ CREATE TABLE "ps_variants" (
 	CONSTRAINT "ps_variants_price_ck" CHECK ("ps_variants"."price" IS NULL OR "ps_variants"."price" >= 0)
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX "ps_assets_path_uq" ON "ps_assets" USING btree ("file_path");--> statement-breakpoint
+CREATE INDEX "ps_assets_store_created_idx" ON "ps_assets" USING btree ("store_id","created_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_cart_items_cart_variant_uq" ON "ps_cart_items" USING btree ("cart_id","variant_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_carts_store_token_uq" ON "ps_carts" USING btree ("store_id","token");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_categories_store_name_uq" ON "ps_categories" USING btree ("store_id","name");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_categories_business_id_uq" ON "ps_categories" USING btree ("business_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_channels_store_provider_external_uq" ON "ps_channels" USING btree ("store_id","provider","external_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_connected_accounts_store_provider_uq" ON "ps_connected_accounts" USING btree ("store_id","provider","external_account_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_conversations_channel_thread_uq" ON "ps_conversations" USING btree ("channel_id","external_thread_id") WHERE "ps_conversations"."external_thread_id" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "ps_conversations_store_updated_idx" ON "ps_conversations" USING btree ("store_id","last_message_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_customers_store_phone_uq" ON "ps_customers" USING btree ("store_id","phone");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_customers_business_id_uq" ON "ps_customers" USING btree ("business_id","id");--> statement-breakpoint
+CREATE INDEX "ps_customers_store_name_idx" ON "ps_customers" USING btree ("store_id","name");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_delivery_zones_store_name_uq" ON "ps_delivery_zones" USING btree ("store_id","name");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_inventory_variant_uq" ON "ps_inventory" USING btree ("variant_id");--> statement-breakpoint
+CREATE INDEX "ps_inventory_store_idx" ON "ps_inventory" USING btree ("store_id");--> statement-breakpoint
+CREATE INDEX "ps_inventory_movements_variant_created_idx" ON "ps_inventory_movements" USING btree ("variant_id","created_at");--> statement-breakpoint
+CREATE INDEX "ps_inventory_movements_store_created_idx" ON "ps_inventory_movements" USING btree ("store_id","created_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_messages_external_uq" ON "ps_messages" USING btree ("store_id","external_message_id") WHERE "ps_messages"."external_message_id" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "ps_messages_conversation_sent_idx" ON "ps_messages" USING btree ("conversation_id","sent_at");--> statement-breakpoint
+CREATE INDEX "ps_order_events_order_created_idx" ON "ps_order_events" USING btree ("order_id","created_at");--> statement-breakpoint
+CREATE INDEX "ps_order_items_order_idx" ON "ps_order_items" USING btree ("order_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_orders_reference_uq" ON "ps_orders" USING btree ("reference");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_orders_access_token_uq" ON "ps_orders" USING btree ("access_token_hash");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_orders_idempotency_uq" ON "ps_orders" USING btree ("store_id","idempotency_key");--> statement-breakpoint
+CREATE INDEX "ps_orders_store_created_idx" ON "ps_orders" USING btree ("store_id","created_at");--> statement-breakpoint
+CREATE INDEX "ps_orders_store_status_idx" ON "ps_orders" USING btree ("store_id","fulfilment_status");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_payments_provider_reference_uq" ON "ps_payments" USING btree ("provider","provider_reference") WHERE "ps_payments"."provider_reference" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "ps_payments_order_idx" ON "ps_payments" USING btree ("order_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_product_images_product_asset_uq" ON "ps_product_images" USING btree ("product_id","asset_id");--> statement-breakpoint
+CREATE INDEX "ps_product_images_product_position_idx" ON "ps_product_images" USING btree ("product_id","position");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_products_store_sku_uq" ON "ps_products" USING btree ("store_id","sku");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_products_store_slug_uq" ON "ps_products" USING btree ("store_id","slug");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_products_business_id_uq" ON "ps_products" USING btree ("business_id","id");--> statement-breakpoint
+CREATE INDEX "ps_products_store_status_idx" ON "ps_products" USING btree ("store_id","status");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_stores_business_uq" ON "ps_stores" USING btree ("business_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_stores_business_id_uq" ON "ps_stores" USING btree ("business_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_stores_slug_uq" ON "ps_stores" USING btree ("slug");--> statement-breakpoint
+CREATE UNIQUE INDEX "ps_variants_product_sku_uq" ON "ps_variants" USING btree ("product_id","sku");--> statement-breakpoint
+CREATE INDEX "ps_variants_product_idx" ON "ps_variants" USING btree ("product_id");--> statement-breakpoint
 ALTER TABLE "ps_assets" ADD CONSTRAINT "ps_assets_store_id_ps_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."ps_stores"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ps_assets" ADD CONSTRAINT "ps_assets_business_id_businesses_id_fk" FOREIGN KEY ("business_id") REFERENCES "public"."businesses"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ps_assets" ADD CONSTRAINT "ps_assets_tenant_store_fk" FOREIGN KEY ("business_id","store_id") REFERENCES "public"."ps_stores"("business_id","id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -400,43 +440,3 @@ ALTER TABLE "ps_variants" ADD CONSTRAINT "ps_variants_product_id_ps_products_id_
 ALTER TABLE "ps_variants" ADD CONSTRAINT "ps_variants_store_id_ps_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."ps_stores"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ps_variants" ADD CONSTRAINT "ps_variants_business_id_businesses_id_fk" FOREIGN KEY ("business_id") REFERENCES "public"."businesses"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ps_variants" ADD CONSTRAINT "ps_variants_tenant_store_fk" FOREIGN KEY ("business_id","store_id") REFERENCES "public"."ps_stores"("business_id","id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_assets_path_uq" ON "ps_assets" USING btree ("file_path");--> statement-breakpoint
-CREATE INDEX "ps_assets_store_created_idx" ON "ps_assets" USING btree ("store_id","created_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_cart_items_cart_variant_uq" ON "ps_cart_items" USING btree ("cart_id","variant_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_carts_store_token_uq" ON "ps_carts" USING btree ("store_id","token");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_categories_store_name_uq" ON "ps_categories" USING btree ("store_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_categories_business_id_uq" ON "ps_categories" USING btree ("business_id","id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_channels_store_provider_external_uq" ON "ps_channels" USING btree ("store_id","provider","external_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_connected_accounts_store_provider_uq" ON "ps_connected_accounts" USING btree ("store_id","provider","external_account_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_conversations_channel_thread_uq" ON "ps_conversations" USING btree ("channel_id","external_thread_id") WHERE "ps_conversations"."external_thread_id" IS NOT NULL;--> statement-breakpoint
-CREATE INDEX "ps_conversations_store_updated_idx" ON "ps_conversations" USING btree ("store_id","last_message_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_customers_store_phone_uq" ON "ps_customers" USING btree ("store_id","phone");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_customers_business_id_uq" ON "ps_customers" USING btree ("business_id","id");--> statement-breakpoint
-CREATE INDEX "ps_customers_store_name_idx" ON "ps_customers" USING btree ("store_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_delivery_zones_store_name_uq" ON "ps_delivery_zones" USING btree ("store_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_inventory_variant_uq" ON "ps_inventory" USING btree ("variant_id");--> statement-breakpoint
-CREATE INDEX "ps_inventory_store_idx" ON "ps_inventory" USING btree ("store_id");--> statement-breakpoint
-CREATE INDEX "ps_inventory_movements_variant_created_idx" ON "ps_inventory_movements" USING btree ("variant_id","created_at");--> statement-breakpoint
-CREATE INDEX "ps_inventory_movements_store_created_idx" ON "ps_inventory_movements" USING btree ("store_id","created_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_messages_external_uq" ON "ps_messages" USING btree ("store_id","external_message_id") WHERE "ps_messages"."external_message_id" IS NOT NULL;--> statement-breakpoint
-CREATE INDEX "ps_messages_conversation_sent_idx" ON "ps_messages" USING btree ("conversation_id","sent_at");--> statement-breakpoint
-CREATE INDEX "ps_order_events_order_created_idx" ON "ps_order_events" USING btree ("order_id","created_at");--> statement-breakpoint
-CREATE INDEX "ps_order_items_order_idx" ON "ps_order_items" USING btree ("order_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_orders_reference_uq" ON "ps_orders" USING btree ("reference");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_orders_access_token_uq" ON "ps_orders" USING btree ("access_token_hash");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_orders_idempotency_uq" ON "ps_orders" USING btree ("store_id","idempotency_key");--> statement-breakpoint
-CREATE INDEX "ps_orders_store_created_idx" ON "ps_orders" USING btree ("store_id","created_at");--> statement-breakpoint
-CREATE INDEX "ps_orders_store_status_idx" ON "ps_orders" USING btree ("store_id","fulfilment_status");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_payments_provider_reference_uq" ON "ps_payments" USING btree ("provider","provider_reference") WHERE "ps_payments"."provider_reference" IS NOT NULL;--> statement-breakpoint
-CREATE INDEX "ps_payments_order_idx" ON "ps_payments" USING btree ("order_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_product_images_product_asset_uq" ON "ps_product_images" USING btree ("product_id","asset_id");--> statement-breakpoint
-CREATE INDEX "ps_product_images_product_position_idx" ON "ps_product_images" USING btree ("product_id","position");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_products_store_sku_uq" ON "ps_products" USING btree ("store_id","sku");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_products_store_slug_uq" ON "ps_products" USING btree ("store_id","slug");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_products_business_id_uq" ON "ps_products" USING btree ("business_id","id");--> statement-breakpoint
-CREATE INDEX "ps_products_store_status_idx" ON "ps_products" USING btree ("store_id","status");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_stores_business_uq" ON "ps_stores" USING btree ("business_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_stores_business_id_uq" ON "ps_stores" USING btree ("business_id","id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_stores_slug_uq" ON "ps_stores" USING btree ("slug");--> statement-breakpoint
-CREATE UNIQUE INDEX "ps_variants_product_sku_uq" ON "ps_variants" USING btree ("product_id","sku");--> statement-breakpoint
-CREATE INDEX "ps_variants_product_idx" ON "ps_variants" USING btree ("product_id");
