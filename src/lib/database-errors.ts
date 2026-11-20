@@ -1,4 +1,4 @@
-type ErrorWithDetails = { code?: unknown; constraint?: unknown; cause?: unknown };
+type ErrorWithDetails = { code?: unknown; constraint?: unknown; constraint_name?: unknown; cause?: unknown };
 
 function errorChain(error: unknown) {
   const chain: ErrorWithDetails[] = [];
@@ -16,8 +16,9 @@ export function databaseErrorCode(error: unknown) {
 }
 
 export function databaseConstraint(error: unknown) {
-  const match = errorChain(error).find((candidate) => typeof candidate.constraint === "string");
-  return typeof match?.constraint === "string" ? match.constraint : undefined;
+  const match = errorChain(error).find((candidate) => typeof candidate.constraint === "string" || typeof candidate.constraint_name === "string");
+  if (typeof match?.constraint === "string") return match.constraint;
+  return typeof match?.constraint_name === "string" ? match.constraint_name : undefined;
 }
 
 export function isDatabaseUnavailable(error: unknown) {
