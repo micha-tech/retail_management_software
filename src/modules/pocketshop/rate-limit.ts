@@ -9,12 +9,14 @@ type LimitRow = { attempts: number; window_start: Date };
 export async function consumeRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
   const now = new Date();
   const threshold = new Date(now.getTime() - windowMs);
+  const nowValue = now.toISOString();
+  const thresholdValue = threshold.toISOString();
   const rows = await db.execute<LimitRow>(sql`
     INSERT INTO ps_rate_limits (key, attempts, window_start)
-    VALUES (${key}, 1, ${now})
+    VALUES (${key}, 1, ${nowValue})
     ON CONFLICT (key) DO UPDATE SET
-      attempts = CASE WHEN ps_rate_limits.window_start < ${threshold} THEN 1 ELSE ps_rate_limits.attempts + 1 END,
-      window_start = CASE WHEN ps_rate_limits.window_start < ${threshold} THEN ${now} ELSE ps_rate_limits.window_start END
+      attempts = CASE WHEN ps_rate_limits.window_start < ${thresholdValue} THEN 1 ELSE ps_rate_limits.attempts + 1 END,
+      window_start = CASE WHEN ps_rate_limits.window_start < ${thresholdValue} THEN ${nowValue} ELSE ps_rate_limits.window_start END
     RETURNING attempts, window_start
   `);
   return (rows[0]?.attempts ?? limit + 1) <= limit;
