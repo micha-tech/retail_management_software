@@ -15,12 +15,12 @@
 .lightButton:hover { background:#DBEAFE; }
 .heroContact { display:inline-flex; align-items:center; gap:8px; color:#DBEAFE; font-size:14px; }
 .heroContact:hover { text-decoration:underline; text-underline-offset:5px; }
-.demoNote { display:flex; align-items:center; gap:8px; margin-top:24px; color:#abc6b9; font-size:12px; line-height:1.6; }
+.demoNote { display:flex; align-items:center; gap:8px; margin-top:24px; color:#BFDBFE; font-size:12px; line-height:1.6; }
 .demoNote svg { flex:none; }
 .collage { position:relative; aspect-ratio:1.05; width:100%; max-width:590px; margin:auto; }
 .collage > div:not(.connectedCard):not(.stockBadge) { position:absolute; overflow:hidden; }
 .collage img { width:100%; height:100%; object-fit:cover; }
-.collageHardware { top:10%; left:1%; width:38%; height:37%; border-radius:50%; border:9px solid #bde5ce; }
+.collageHardware { top:10%; left:1%; width:38%; height:37%; border-radius:50%; border:9px solid #DBEAFE; }
 .collageHardware img { object-position:48% center; }
 .collageTeam { top:0; right:2%; width:53%; height:52%; border-radius:36% 30% 34% 24%; }
 .collageTeam img { object-position:43% center; }
@@ -98,7 +98,7 @@
 .startPhoto { position:relative; overflow:hidden; border-radius:20px; }
 .startPhoto img { width:100%; height:620px; object-fit:cover; object-position:37% center; }
 .startPhoto > div { position:absolute; inset:auto 0 0; padding:70px 30px 30px; background:linear-gradient(transparent,#172554ed); display:flex; flex-direction:column; gap:6px; color:#fff; }
-.startPhoto span { font-size:14px; color:#cee7d8; }
+.startPhoto span { font-size:14px; color:#DBEAFE; }
 .startPhoto strong { font-size:24px; letter-spacing:-.02em; line-height:1.3; }
 .startSteps { display:flex; flex-direction:column; gap:26px; margin:32px 0; }
 .startSteps article { display:flex; align-items:flex-start; gap:18px; }

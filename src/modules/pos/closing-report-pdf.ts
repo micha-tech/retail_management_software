@@ -35,7 +35,7 @@ export type ClosingReportData = {
   cashMovements: ClosingReportCashMovement[];
 };
 
-const palette = { ink: "#17211B", muted: "#68736C", line: "#DCE4DF", soft: "#F2F6F3", green: "#2563EB", evergreen: "#172554", mint: "#DFF1E7", danger: "#A93636" };
+const palette = { ink: "#17211B", muted: "#68736C", line: "#DCE4DF", soft: "#F2F6F3", green: "#2563EB", evergreen: "#172554", mint: "#DBEAFE", danger: "#A93636" };
 const page = { left: 40, right: 555, bottom: 790 };
 
 function money(value: bigint, currency: string) {

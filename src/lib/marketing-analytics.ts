@@ -2,5 +2,5 @@ export type MarketingEvent = "book_demo_clicked" | "talk_to_sales_clicked" | "si
 
 export function trackMarketingEvent(name: MarketingEvent, context: Record<string, string | number | boolean> = {}) {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("retail-logic:analytics", { detail: { name, context } }));
+  window.dispatchEvent(new CustomEvent("zyphr-logic:analytics", { detail: { name, context } }));
 }
