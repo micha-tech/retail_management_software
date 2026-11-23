@@ -9,6 +9,7 @@ export function OrderStatusForm({ orderId, current, options }: { orderId: string
   if (options.length === 0) return <p className="ps-hint">This order has reached its final state.</p>;
   return (
     <form action={action} className="ps-form">
+      <p className="ps-hint">Current status: {current.replaceAll("_", " ")}</p>
       <input type="hidden" name="orderId" value={orderId} />
       <label>New status<select name="status" defaultValue={options[0]}>{options.map((option) => <option key={option} value={option}>{option.replaceAll("_", " ")}</option>)}</select></label>
       <label>Tracking reference (required for dispatch)<input name="trackingRef" maxLength={100} placeholder="Courier waybill or rider reference" /></label>

@@ -105,7 +105,7 @@ export async function placeOrder(input: CheckoutInput): Promise<CheckoutResult> 
         lines: lines.map((line) => ({ variantId: line.variantId, productId: line.productId, quantity: line.quantity })),
       });
 
-      await tx.insert(psOrderItems).values(lines.map((line, index) => {
+      await tx.insert(psOrderItems).values(lines.map((line) => {
         const unitPrice = line.variantPrice ?? line.price;
         return {
           orderId: order.id, productId: line.productId, variantId: line.variantId,

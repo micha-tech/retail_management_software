@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies, headers } from "next/headers";
 
-import { DateText, EmptyState, Money, StatusPill } from "@/components/pocketshop/ui";
+import { DateText, EmptyState, StatusPill } from "@/components/pocketshop/ui";
 import { formatMoney } from "@/lib/money";
 import { getPublishedStore } from "@/modules/pocketshop/authorization";
 import { ORDER_COOKIE } from "@/modules/pocketshop/lib/constants";

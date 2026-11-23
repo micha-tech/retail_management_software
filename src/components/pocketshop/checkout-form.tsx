@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { checkoutAction } from "@/modules/pocketshop/cart-actions";
 import type { PocketActionState } from "@/modules/pocketshop/schemas";
 
@@ -17,16 +17,19 @@ type Props = {
 
 export function CheckoutForm({ storeSlug, zones, paymentMethods, paymentTiming, onlinePayments, deliveryEnabled, pickupEnabled }: Props) {
   const [state, action, pending] = useActionState<PocketActionState, FormData>(checkoutAction, {});
-  const [key, setKey] = useState("");
+  const keyRef = useRef<HTMLInputElement>(null);
   const [delivery, setDelivery] = useState<"DELIVERY" | "PICKUP">(deliveryEnabled ? "DELIVERY" : "PICKUP");
-  useEffect(() => setKey(crypto.randomUUID()), []);
   const methods = paymentMethods.filter((method) => (method === "CARD" || method === "USSD" ? onlinePayments : true));
   const money = (minor: string) => (Number(minor) / 100).toFixed(2);
 
+  function ensureIdempotencyKey() {
+    if (keyRef.current && !keyRef.current.value) keyRef.current.value = crypto.randomUUID();
+  }
+
   return (
-    <form action={action} className="ps-stack">
+    <form action={action} className="ps-stack" onSubmit={ensureIdempotencyKey}>
       <input type="hidden" name="storeSlug" value={storeSlug} />
-      <input type="hidden" name="idempotencyKey" value={key} />
+      <input ref={keyRef} type="hidden" name="idempotencyKey" />
       <div className="ps-checkout-card">
         <h2>Your details</h2>
         <div className="ps-form ps-form-grid">
@@ -73,7 +76,7 @@ export function CheckoutForm({ storeSlug, zones, paymentMethods, paymentTiming, 
         </div>
       </div>
       {state.error && <p className="ps-error" role="alert">{state.error}</p>}
-      <button className="ps-button" disabled={pending || !key}>{pending ? "Placing order…" : "Place order"}</button>
+      <button className="ps-button" disabled={pending}>{pending ? "Placing order…" : "Place order"}</button>
       <p className="ps-hint">Prices and stock are checked again on the server before your order is confirmed.</p>
     </form>
   );

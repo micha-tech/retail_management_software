@@ -1,0 +1,149 @@
+@media (max-width: 980px) {
+  .marketing-site .marketing-mobile-nav {
+    --mobile-nav-border: var(--m-line);
+    --mobile-nav-surface: #ffffff;
+    display: flex;
+    max-height: calc(100dvh - 80px);
+    padding: 12px 16px 18px;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .enterprise-marketing .marketing-mobile-nav {
+    --mobile-nav-border: #ffffff24;
+    --mobile-nav-surface: #ffffff0a;
+  }
+
+  .marketing-site .marketing-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .marketing-site .marketing-mobile-grid > a,
+  .marketing-site .marketing-mobile-group summary {
+    display: flex;
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 12px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid var(--mobile-nav-border);
+    border-radius: 10px;
+    background: var(--mobile-nav-surface);
+    color: inherit;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.25;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .marketing-site .marketing-mobile-group {
+    grid-column: span 1;
+    min-width: 0;
+  }
+
+  .marketing-site .marketing-mobile-group[open] {
+    grid-column: 1 / -1;
+  }
+
+  .marketing-site .marketing-mobile-group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .marketing-site .marketing-mobile-group summary svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    transition: transform 0.18s ease;
+  }
+
+  .marketing-site .marketing-mobile-group[open] summary svg {
+    transform: rotate(180deg);
+  }
+
+  .marketing-site .marketing-mobile-group > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px 0 2px;
+  }
+
+  .marketing-site .marketing-mobile-nav a.sub {
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 550;
+    opacity: 0.86;
+  }
+
+  .marketing-site .marketing-mobile-nav a.sub:hover {
+    background: var(--mobile-nav-surface);
+    opacity: 1;
+  }
+
+  .marketing-site .marketing-mobile-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--mobile-nav-border);
+  }
+
+  .marketing-site .marketing-mobile-signin {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--mobile-nav-border);
+    border-radius: 10px;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 650;
+  }
+
+  .marketing-site .marketing-mobile-actions .marketing-button {
+    width: 100%;
+    min-height: 46px;
+    margin: 0;
+    justify-content: center;
+  }
+
+  .marketing-site .marketing-mobile-grid > a.is-active,
+  .marketing-site .marketing-mobile-group summary.is-active {
+    border-color: currentColor;
+  }
+}
+
+@media (max-width: 680px) {
+  .marketing-site .marketing-mobile-nav {
+    max-height: calc(100dvh - 68px);
+    padding: 10px 14px 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .marketing-site .marketing-mobile-grid {
+    gap: 6px;
+  }
+
+  .marketing-site .marketing-mobile-grid > a,
+  .marketing-site .marketing-mobile-group summary {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .marketing-site .marketing-mobile-group > div {
+    grid-template-columns: 1fr;
+  }
+
+  .marketing-site .marketing-mobile-actions {
+    grid-template-columns: 1fr;
+  }
+}

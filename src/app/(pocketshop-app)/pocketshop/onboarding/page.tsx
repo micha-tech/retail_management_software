@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { ActionForm } from "@/components/pocketshop/action-form";
 import { ImageField } from "@/components/pocketshop/image-field";

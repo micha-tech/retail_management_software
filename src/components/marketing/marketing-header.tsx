@@ -57,9 +57,15 @@ export function MarketingHeader() {
     {open && <nav id="mobile-navigation" className="marketing-mobile-nav" aria-label="Mobile navigation" onClick={event => {
       if ((event.target as Element).closest("a")) setOpen(false);
     }}>
-      {navItems.map(item => item.children ? <details className="marketing-mobile-group" key={item.label}><summary>{item.label}<ChevronDown aria-hidden="true" /></summary><div>{item.children.map(child => <Link className="sub" href={child.href} key={child.href}>{child.label}</Link>)}</div></details> : <Link href={item.href} key={item.label}>{item.label}</Link>)}
-      <TrackedLink event="sign_in_clicked" href="/login">Sign In</TrackedLink>
-      <TrackedLink event="book_demo_clicked" href="/demo" className="marketing-button">Explore the Demo</TrackedLink>
+      <div className="marketing-mobile-grid">
+        {navItems.map(item => item.children
+          ? <details className="marketing-mobile-group" key={item.label}><summary className={pathname.startsWith(item.href) ? "is-active" : ""}>{item.label}<ChevronDown aria-hidden="true" /></summary><div>{item.children.map(child => <Link className="sub" href={child.href} key={child.href}>{child.label}</Link>)}</div></details>
+          : <Link className={`marketing-mobile-link ${pathname === item.href ? "is-active" : ""}`} href={item.href} key={item.label}>{item.label}</Link>)}
+      </div>
+      <div className="marketing-mobile-actions">
+        <TrackedLink event="sign_in_clicked" href="/login" className="marketing-mobile-signin">Sign In</TrackedLink>
+        <TrackedLink event="book_demo_clicked" href="/demo" className="marketing-button">Explore the Demo</TrackedLink>
+      </div>
     </nav>}
   </header>;
 }

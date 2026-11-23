@@ -1,7 +1,6 @@
 import { ActionForm } from "@/components/pocketshop/action-form";
 import { Money, PageHeader, StatusPill } from "@/components/pocketshop/ui";
 import { requirePocketStore } from "@/modules/pocketshop/authorization";
-import { deliveryZoneSchema } from "@/modules/pocketshop/schemas";
 import { deleteDeliveryZoneAction, saveDeliveryZoneAction } from "@/modules/pocketshop/store-actions";
 import { getDeliveryZones } from "@/modules/pocketshop/queries";
 

@@ -292,7 +292,7 @@ export async function adjustStockAction(_state: PocketActionState, formData: For
 const HEADERS = ["name", "sku", "price", "compare_at_price", "description", "category", "quantity", "low_stock_threshold", "status"];
 
 export async function importProductsPreviewAction(_state: ImportPreviewState, formData: FormData): Promise<ImportPreviewState> {
-  const { store, business } = await requirePocketStore();
+  const { store } = await requirePocketStore();
   const csv = String(formData.get("csv") || "").slice(0, 500_000);
   if (!csv.trim()) return { error: "Choose a CSV file first." };
   const { parseCsv } = await import("@/lib/csv");
@@ -338,7 +338,7 @@ export async function commitProductImportAction(formData: FormData) {
 
   try {
     await db.transaction(async (tx) => {
-      for (const [index, record] of valid.entries()) {
+      for (const record of valid) {
         let categoryId: string | null = null;
         if (record.category) {
           const [category] = await tx.insert(psCategories).values({ storeId: store.id, businessId: business.id, name: record.category.slice(0, 80) })

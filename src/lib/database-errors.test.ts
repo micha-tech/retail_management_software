@@ -8,6 +8,11 @@ describe("database error classification", () => {
     expect(databaseConstraint(error)).toBe("users_email_uq");
   });
 
+  it("reads constraint names from the postgres driver", () => {
+    expect(databaseConstraint({ code: "23505", constraint_name: "ps_stores_slug_uq" })).toBe("ps_stores_slug_uq");
+    expect(databaseConstraint(new Error("transaction failed", { cause: { code: "23505", constraint_name: "users_email_uq" } }))).toBe("users_email_uq");
+  });
+
   it("classifies connection exhaustion and timeouts as unavailable", () => {
     expect(isDatabaseUnavailable({ code: "CONNECT_TIMEOUT" })).toBe(true);
     expect(isDatabaseUnavailable({ cause: { code: "53300" } })).toBe(true);
